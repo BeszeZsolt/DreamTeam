@@ -1,28 +1,74 @@
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-st.title("Streamlit Test UI")
+st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
-st.write("Welcome to this basic Streamlit application!")
+REQUIRED_COLUMNS = [
+    "industry",
+    "website",
+    "pageType",
+    "have all subpages",
+    "url",
+    "BE - Carbon Emission - page",
+    "BE_2_Manual",
+    "BE - Carbon Emission - all subpages ",
+    "BE - Reduction % - page",
+    "Reduction % - image",
+    "BE - Reduced Carbon Emission",
+    "BE - Reduced Carbon Emission - all subpages",
+    "BE - Reduction % - all subpages",
+    "Rank Reduction % - page",
+    "Rank Reduced Carbon Emission",
+    "Rank Reduction % - all subpages",
+    "Rank Reduced Carbon Emission -  all subpages",
+]
 
-name = st.text_input("Enter your name:")
-if name:
-    st.write(f"Hello, {name}!")
+st.title("🌿 Carbon Crane")
 
-age = st.slider("Select your age:", 0, 100, 25)
-st.write(f"You are {age} years old")
+uploaded = st.file_uploader("Excel fájl feltöltése (.xlsx)", type=["xlsx"])
 
-option = st.selectbox("Choose an option:", ["Option 1", "Option 2", "Option 3"])
-st.write(f"You selected: {option}")
+if not uploaded:
+    st.stop()
 
-if st.button("Click me!"):
-    st.success("Button clicked!")
+try:
+    df = pd.read_excel(uploaded, sheet_name=0, header=0)
+except Exception:
+    st.error("A fájl nem olvasható. Ellenőrizd, hogy érvényes .xlsx fájlt töltöttél-e fel.")
+    st.stop()
 
-data = pd.DataFrame({
-    "Name": ["Alice", "Bob", "Charlie"],
-    "Age": [25, 30, 35],
-    "Score": [85, 92, 78]
-})
-st.write("Sample Data:")
-st.dataframe(data)
+missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+if missing:
+    st.error("A fájl struktúrája nem megfelelő. Hiányzó oszlopok:")
+    for col in missing:
+        st.write(f"- `{col}`")
+    st.stop()
+
+df = df.dropna(subset=["website"])
+df["website"] = df["website"].str.strip()
+
+st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} cég")
+
+sel_ceg = st.selectbox("Válassz céget", sorted(df["website"].unique()))
+
+reszletes = st.toggle("Részletes nézet")
+
+if reszletes:
+    st.divider()
+
+    scope = st.radio("Megjelenítés", ["Csak a kiválasztott cég", "Összes cég"], horizontal=True)
+
+    if scope == "Összes cég":
+        col_ipar, col_oldal = st.columns(2)
+        with col_ipar:
+            sel_ipar = st.multiselect("Iparág", sorted(df["industry"].unique()), placeholder="Mind")
+        with col_oldal:
+            sel_oldal = st.multiselect("Oldaltípus", sorted(df["pageType"].unique()), placeholder="Mind")
+        filtered = df.copy()
+        if sel_ipar:
+            filtered = filtered[filtered["industry"].isin(sel_ipar)]
+        if sel_oldal:
+            filtered = filtered[filtered["pageType"].isin(sel_oldal)]
+    else:
+        filtered = df[df["website"] == sel_ceg].copy()
+
+    st.dataframe(filtered.reset_index(drop=True), width='stretch')
