@@ -23,7 +23,7 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission -  all subpages",
 ]
 
-st.title("🌿 Carbon Crane")
+st.title("Carbon Crane infografika készítő")
 
 uploaded = st.file_uploader("Excel fájl feltöltése (.xlsx)", type=["xlsx"])
 
@@ -46,18 +46,18 @@ if missing:
 df = df.dropna(subset=["website"])
 df["website"] = df["website"].str.strip()
 
-st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} cég")
+st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
 
-sel_ceg = st.selectbox("Válassz céget", sorted(df["website"].unique()))
+sel_ceg = st.selectbox("Válassz weboldalt", sorted(df["website"].unique()))
 
 reszletes = st.toggle("Részletes nézet")
 
 if reszletes:
     st.divider()
 
-    scope = st.radio("Megjelenítés", ["Csak a kiválasztott cég", "Összes cég"], horizontal=True)
+    scope = st.radio("Megjelenítés", ["Csak a kiválasztott weboldal", "Összes weboldal"], horizontal=True)
 
-    if scope == "Összes cég":
+    if scope == "Összes weboldal":
         col_ipar, col_oldal = st.columns(2)
         with col_ipar:
             sel_ipar = st.multiselect("Iparág", sorted(df["industry"].unique()), placeholder="Mind")
