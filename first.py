@@ -3,25 +3,53 @@ import streamlit as st
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
+# ── Statikus konstansok ───────────────────────────────────────────────────────
+
+CO2_PER_WASH  = 0.236615995  # 1 mosás CO2e-je [kg]
+CO2_PER_KM    = 0.215118375  # 1 km autózás CO2e-je [kg]
+CO2_PER_KWH   = 0.236150771  # 1 kWh áram CO2-je [kg]
+KWH_PER_HOUSE = 2500         # 1 háztartás éves energiafogyasztása [kWh]
+TOTAL_PV      = 120_000_000  # összes page visit (fixált)
+BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km]
+
+COL_EM_ALL  = "BE - Carbon Emission - all subpages "
+COL_EM_PAGE = "BE - Carbon Emission - page"
+COL_RED     = "BE - Reduced Carbon Emission"
+
 REQUIRED_COLUMNS = [
-    "industry",
-    "website",
-    "pageType",
-    "have all subpages",
-    "url",
-    "BE - Carbon Emission - page",
-    "BE_2_Manual",
-    "BE - Carbon Emission - all subpages ",
-    "BE - Reduction % - page",
-    "Reduction % - image",
-    "BE - Reduced Carbon Emission",
-    "BE - Reduced Carbon Emission - all subpages",
-    "BE - Reduction % - all subpages",
-    "Rank Reduction % - page",
-    "Rank Reduced Carbon Emission",
-    "Rank Reduction % - all subpages",
+    "industry", "website", "pageType", "have all subpages", "url",
+    COL_EM_PAGE, COL_EM_ALL,
+    "BE - Reduction % - page", "Reduction % - image",
+    COL_RED, "BE - Reduced Carbon Emission - all subpages",
+    "BE - Reduction % - all subpages", "Rank Reduction % - page",
+    "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
 ]
+
+# ── Számítások ────────────────────────────────────────────────────────────────
+
+def calc_stats(rows: pd.DataFrame, col: str) -> dict:
+    """Max/avg/min a megadott carbon emission oszlopból."""
+    em_avg = rows[col].mean()
+    kg_co2 = em_avg * TOTAL_PV / 1000
+    return {
+        "em_max": rows[col].max(),
+        "em_avg": em_avg,
+        "em_min": rows[col].min(),
+        "kg_co2": kg_co2,
+        "wash":   kg_co2 / CO2_PER_WASH,
+        "bp_paris_trips": kg_co2 / CO2_PER_KM / BP_PARIS_KM,
+    }
+
+
+def calc_all(df: pd.DataFrame) -> dict:
+    """Összesítő + oldaltípusonkénti max/avg/min számítások."""
+    return {
+        "summary":     calc_stats(df, COL_EM_ALL),
+        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE) for pt, g in df.groupby("pageType")},
+    }
+
+# ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane infografika készítő")
 
@@ -31,7 +59,12 @@ if not uploaded:
     st.stop()
 
 try:
-    df = pd.read_excel(uploaded, sheet_name=0, header=0)
+    xl = pd.ExcelFile(uploaded)
+    matching = [s for s in xl.sheet_names if "carbon_scan_output_ecomm" in s]
+    if not matching:
+        st.error("A fájlban nem található 'carbon_scan_output_ecomm' nevű sheet.")
+        st.stop()
+    df = xl.parse(matching[0], header=0)
 except Exception:
     st.error("A fájl nem olvasható. Ellenőrizd, hogy érvényes .xlsx fájlt töltöttél-e fel.")
     st.stop()
@@ -46,29 +79,46 @@ if missing:
 df = df.dropna(subset=["website"])
 df["website"] = df["website"].str.strip()
 
+data = calc_all(df)
+
 st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
 
-sel_ceg = st.selectbox("Válassz weboldalt", sorted(df["website"].unique()))
+# ── Számítások megjelenítése ──────────────────────────────────────────────────
+
+st.divider()
+
+page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
+sel_oldal = st.radio("Oldal", page_options, horizontal=True)
+
+if sel_oldal == "Összesítő":
+    st.json(data["summary"])
+else:
+    st.json(data["by_pagetype"][sel_oldal])
+
+# ── Részletes nézet ───────────────────────────────────────────────────────────
 
 reszletes = st.toggle("Részletes nézet")
 
 if reszletes:
     st.divider()
 
-    scope = st.radio("Megjelenítés", ["Csak a kiválasztott weboldal", "Összes weboldal"], horizontal=True)
+    scope = st.radio("Megjelenítés", ["Összes weboldal", "Egy weboldal"], horizontal=True)
+
+    col1, col2 = st.columns(2)
 
     if scope == "Összes weboldal":
-        col_ipar, col_oldal = st.columns(2)
-        with col_ipar:
+        with col1:
             sel_ipar = st.multiselect("Iparág", sorted(df["industry"].unique()), placeholder="Mind")
-        with col_oldal:
-            sel_oldal = st.multiselect("Oldaltípus", sorted(df["pageType"].unique()), placeholder="Mind")
+        with col2:
+            sel_oldaltipus = st.multiselect("Oldaltípus", sorted(df["pageType"].unique()), placeholder="Mind")
         filtered = df.copy()
         if sel_ipar:
             filtered = filtered[filtered["industry"].isin(sel_ipar)]
-        if sel_oldal:
-            filtered = filtered[filtered["pageType"].isin(sel_oldal)]
+        if sel_oldaltipus:
+            filtered = filtered[filtered["pageType"].isin(sel_oldaltipus)]
     else:
+        with col1:
+            sel_ceg = st.selectbox("Válassz weboldalt", sorted(df["website"].unique()))
         filtered = df[df["website"] == sel_ceg].copy()
 
     st.dataframe(filtered.reset_index(drop=True), width='stretch')
