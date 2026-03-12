@@ -14,7 +14,9 @@ BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km]
 
 COL_EM_ALL  = "BE - Carbon Emission - all subpages "
 COL_EM_PAGE = "BE - Carbon Emission - page"
-COL_RED     = "BE - Reduced Carbon Emission"
+COL_RED_PAGE = "BE - Reduced Carbon Emission"
+COL_RED     = COL_RED_PAGE  # alias
+COL_RED_ALL = "BE - Reduced Carbon Emission - all subpages"
 
 REQUIRED_COLUMNS = [
     "industry", "website", "pageType", "have all subpages", "url",
@@ -28,25 +30,33 @@ REQUIRED_COLUMNS = [
 
 # ── Számítások ────────────────────────────────────────────────────────────────
 
-def calc_stats(rows: pd.DataFrame, col: str) -> dict:
-    """Max/avg/min a megadott carbon emission oszlopból."""
-    em_avg = rows[col].mean()
-    kg_co2 = em_avg * TOTAL_PV / 1000
+def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
+    """Emission statisztikák + csökkentési potenciál egy adott oszloppárra."""
+    em_avg   = rows[col_em].mean()
+    kg_co2   = em_avg * TOTAL_PV / 1000
+    per_site = rows.groupby("website").agg(max_em=(col_em, "max"), max_red=(col_red, "max"))
+    red_pct  = per_site["max_red"].sum() / per_site["max_em"].sum()
+    kg_saved = kg_co2 * red_pct
+    kwh      = kg_saved / CO2_PER_KWH
     return {
-        "em_max": rows[col].max(),
-        "em_avg": em_avg,
-        "em_min": rows[col].min(),
-        "kg_co2": kg_co2,
-        "wash":   kg_co2 / CO2_PER_WASH,
+        "em_max":       rows[col_em].max(),
+        "em_avg":       em_avg,
+        "em_min":       rows[col_em].min(),
+        "kg_co2":       kg_co2,
+        "wash":         kg_co2 / CO2_PER_WASH,
         "bp_paris_trips": kg_co2 / CO2_PER_KM / BP_PARIS_KM,
+        "red_pct":      red_pct,
+        "kg_saved":     kg_saved,
+        "kwh":          kwh,
+        "house":        kwh / KWH_PER_HOUSE,
     }
 
 
 def calc_all(df: pd.DataFrame) -> dict:
     """Összesítő + oldaltípusonkénti max/avg/min számítások."""
     return {
-        "summary":     calc_stats(df, COL_EM_ALL),
-        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE) for pt, g in df.groupby("pageType")},
+        "summary":     calc_stats(df, COL_EM_ALL, COL_RED_ALL),
+        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE) for pt, g in df.groupby("pageType")},
     }
 
 # ── UI ────────────────────────────────────────────────────────────────────────
@@ -91,7 +101,7 @@ page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
 sel_oldal = st.radio("Oldal", page_options, horizontal=True)
 
 if sel_oldal == "Összesítő":
-    st.json(data["summary"])
+    st.json({**data["summary"], **data["reduction_potential"]})
 else:
     st.json(data["by_pagetype"][sel_oldal])
 
