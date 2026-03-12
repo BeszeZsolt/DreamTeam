@@ -61,6 +61,46 @@ def calc_all(df: pd.DataFrame) -> dict:
         "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE) for pt, g in df.groupby("pageType")},
     }
 
+# ── Infografika generálás ─────────────────────────────────────────────────────
+
+def generate_infographic(data: dict, template_path: str = "template.png", layout_path: str = "layout.json") -> Image.Image:
+    with open(layout_path) as f:
+        layout = json.load(f)
+
+    img  = Image.open(template_path).convert("RGBA")
+    draw = ImageDraw.Draw(img)
+
+    s = data["summary"]
+
+    fields = {
+        "em_max":         f"{s['em_max']:.2f}",
+        "em_avg":         f"{s['em_avg']:.2f}",
+        "em_min":         f"{s['em_min']:.2f}",
+        "kg_co2":         f"{s['kg_co2']:,.0f}",
+        "wash":           f"{s['wash']:,.0f}",
+        "bp_paris_trips": f"{s['bp_paris_trips']:,.0f}",
+        "red_pct":        f"{s['red_pct']*100:.1f}%",
+        "kwh":            f"{s['kwh']:,.0f}",
+        "house":          f"{s['house']:,.0f}",
+    }
+
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+    except:
+        font = ImageFont.load_default()
+
+    for key, text in fields.items():
+        box = layout[key]
+        x, y, w, h = box["x"], box["y"], box["w"], box["h"]
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw   = bbox[2] - bbox[0]
+        th   = bbox[3] - bbox[1]
+        tx   = x + (w - tw) // 2
+        ty   = y + (h - th) // 2
+        draw.text((tx, ty), text, font=font, fill="white")
+
+    return img
+
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane infografika készítő")
@@ -106,6 +146,14 @@ if sel_oldal == "Összesítő":
     st.json(data["summary"])
 else:
     st.json(data["by_pagetype"][sel_oldal])
+
+# ── Infografika ───────────────────────────────────────────────────────────────
+
+st.divider()
+
+if st.button("Infografika generálása"):
+    img = generate_infographic(data)
+    st.image(img)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
