@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
@@ -30,9 +29,6 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
 ]
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # ── Számítások ────────────────────────────────────────────────────────────────
 
 def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
@@ -66,12 +62,7 @@ def calc_all(df: pd.DataFrame) -> dict:
 
 # ── Infografika generálás ─────────────────────────────────────────────────────
 
-def generate_infographic(stats: dict, template_path: str = None, layout_path: str = None) -> Image.Image:
-    if template_path is None:
-        template_path = os.path.join(BASE_DIR, "Carbon.Crane_infografika_template.png")
-    if layout_path is None:
-        layout_path = os.path.join(BASE_DIR, "layout.json")
-
+def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infografika_template.png", layout_path: str = "layout.json") -> Image.Image:
     with open(layout_path) as f:
         layout = json.load(f)
 
@@ -91,10 +82,7 @@ def generate_infographic(stats: dict, template_path: str = None, layout_path: st
         "house":          f"{stats['house']:,.0f}",
     }
 
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-    except:
-        font = ImageFont.load_default()
+    font = ImageFont.load_default(size=36)
 
     for key, text in fields.items():
         box = layout[key]
