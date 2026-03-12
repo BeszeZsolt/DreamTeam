@@ -82,7 +82,7 @@ def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infogra
         "house":          f"{stats['house']:,.0f}",
     }
 
-    font = ImageFont.load_default(size=36)
+    font = ImageFont.load_default(size=100)
 
     for key, text in fields.items():
         box = layout[key]
