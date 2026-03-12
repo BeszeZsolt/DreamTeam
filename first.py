@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
@@ -14,11 +15,11 @@ KWH_PER_HOUSE = 2500         # 1 háztartás éves energiafogyasztása [kWh]
 TOTAL_PV      = 120_000_000  # összes page visit (fixált)
 BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km]
 
-COL_EM_ALL  = "BE - Carbon Emission - all subpages "
-COL_EM_PAGE = "BE - Carbon Emission - page"
+COL_EM_ALL   = "BE - Carbon Emission - all subpages "
+COL_EM_PAGE  = "BE - Carbon Emission - page"
 COL_RED_PAGE = "BE - Reduced Carbon Emission"
-COL_RED     = COL_RED_PAGE  # alias
-COL_RED_ALL = "BE - Reduced Carbon Emission - all subpages"
+COL_RED      = COL_RED_PAGE  # alias
+COL_RED_ALL  = "BE - Reduced Carbon Emission - all subpages"
 
 REQUIRED_COLUMNS = [
     "industry", "website", "pageType", "have all subpages", "url",
@@ -29,6 +30,8 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
 ]
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Számítások ────────────────────────────────────────────────────────────────
 
@@ -41,16 +44,16 @@ def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
     kg_saved = kg_co2 * red_pct
     kwh      = kg_saved / CO2_PER_KWH
     return {
-        "em_max":       rows[col_em].max(),
-        "em_avg":       em_avg,
-        "em_min":       rows[col_em].min(),
-        "kg_co2":       kg_co2,
-        "wash":         kg_co2 / CO2_PER_WASH,
+        "em_max":         rows[col_em].max(),
+        "em_avg":         em_avg,
+        "em_min":         rows[col_em].min(),
+        "kg_co2":         kg_co2,
+        "wash":           kg_co2 / CO2_PER_WASH,
         "bp_paris_trips": kg_co2 / CO2_PER_KM / BP_PARIS_KM,
-        "red_pct":      red_pct,
-        "kg_saved":     kg_saved,
-        "kwh":          kwh,
-        "house":        kwh / KWH_PER_HOUSE,
+        "red_pct":        red_pct,
+        "kg_saved":       kg_saved,
+        "kwh":            kwh,
+        "house":          kwh / KWH_PER_HOUSE,
     }
 
 
@@ -63,25 +66,29 @@ def calc_all(df: pd.DataFrame) -> dict:
 
 # ── Infografika generálás ─────────────────────────────────────────────────────
 
-def generate_infographic(data: dict, template_path: str = "template.png", layout_path: str = "layout.json") -> Image.Image:
+def generate_infographic(stats: dict, template_path: str = None, layout_path: str = None) -> Image.Image:
+    if template_path is None:
+        template_path = os.path.join(BASE_DIR, "Carbon.Crane_infografika_template.png")
+    if layout_path is None:
+        layout_path = os.path.join(BASE_DIR, "layout.json")
+
     with open(layout_path) as f:
         layout = json.load(f)
 
     img  = Image.open(template_path).convert("RGBA")
     draw = ImageDraw.Draw(img)
 
-    s = data["summary"]
-
     fields = {
-        "em_max":         f"{s['em_max']:.2f}",
-        "em_avg":         f"{s['em_avg']:.2f}",
-        "em_min":         f"{s['em_min']:.2f}",
-        "kg_co2":         f"{s['kg_co2']:,.0f}",
-        "wash":           f"{s['wash']:,.0f}",
-        "bp_paris_trips": f"{s['bp_paris_trips']:,.0f}",
-        "red_pct":        f"{s['red_pct']*100:.1f}%",
-        "kwh":            f"{s['kwh']:,.0f}",
-        "house":          f"{s['house']:,.0f}",
+        "em_max":         f"{stats['em_max']:.2f}",
+        "em_avg":         f"{stats['em_avg']:.2f}",
+        "em_min":         f"{stats['em_min']:.2f}",
+        "kg_co2":         f"{stats['kg_co2']:,.0f}",
+        "wash":           f"{stats['wash']:,.0f}",
+        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
+        "red_pct":        f"{stats['red_pct']*100:.1f}%",
+        "kg_saved":       f"{stats['kg_saved']:,.0f}",
+        "kwh":            f"{stats['kwh']:,.0f}",
+        "house":          f"{stats['house']:,.0f}",
     }
 
     try:
@@ -152,7 +159,11 @@ else:
 st.divider()
 
 if st.button("Infografika generálása"):
-    img = generate_infographic(data)
+    if sel_oldal == "Összesítő":
+        stats = data["summary"]
+    else:
+        stats = data["by_pagetype"][sel_oldal]
+    img = generate_infographic(stats)
     st.image(img)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
