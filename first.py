@@ -101,7 +101,7 @@ page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
 sel_oldal = st.radio("Oldal", page_options, horizontal=True)
 
 if sel_oldal == "Összesítő":
-    st.json({**data["summary"], **data["reduction_potential"]})
+    st.json(data["summary"])
 else:
     st.json(data["by_pagetype"][sel_oldal])
 
