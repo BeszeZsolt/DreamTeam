@@ -82,7 +82,8 @@ def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infogra
         "house":          f"{stats['house']:,.0f} db",
     }
 
-    font = ImageFont.load_default(size=60)
+    font_path = "Roboto-Regular.ttf" 
+    font = ImageFont.truetype(font_path, size=60)
 
     for key, text in fields.items():
         box = layout[key]
