@@ -70,16 +70,16 @@ def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infogra
     draw = ImageDraw.Draw(img)
 
     fields = {
-        "em_max":         f"{stats['em_max']:.2f}",
-        "em_avg":         f"{stats['em_avg']:.2f}",
-        "em_min":         f"{stats['em_min']:.2f}",
-        "kg_co2":         f"{stats['kg_co2']:,.0f}",
-        "wash":           f"{stats['wash']:,.0f}",
-        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
+        "em_max":         f"{stats['em_max']:.2f} g",
+        "em_avg":         f"{stats['em_avg']:.2f} g",
+        "em_min":         f"{stats['em_min']:.2f} g",
+        "kg_co2":         f"{stats['kg_co2']:,.0f} kg",
+        "wash":           f"{stats['wash']:,.0f} mosás",
+        "bp_paris_trips": f"{stats['bp_paris_trips']:,.1f} út",
         "red_pct":        f"{stats['red_pct']*100:.1f}%",
-        "kg_saved":       f"{stats['kg_saved']:,.0f}",
-        "kwh":            f"{stats['kwh']:,.0f}",
-        "house":          f"{stats['house']:,.0f}",
+        "kg_saved":       f"{stats['kg_saved']:,.0f} kg",
+        "kwh":            f"{stats['kwh']:,.0f} kWh",
+        "house":          f"{stats['house']:,.0f} db",
     }
 
     font = ImageFont.load_default(size=60)
