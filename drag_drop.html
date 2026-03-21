@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    font-family: sans-serif;
+    background: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+  }
+
+  .container { display: flex; gap: 30px; align-items: flex-start; }
+  .panel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .panel-title { color: white; font-weight: bold; margin-bottom: 4px; }
+
+  .tray {
+    background: #2a2a2a;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 180px;
+    width: 160px;
+  }
+
+  .slot {
+    width: 160px;
+    height: 55px;
+    border: 2px dashed #555;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2a2a2a;
+    transition: border-color 0.2s;
+  }
+
+  .slot.dragover { border-color: #4CAF50; background: #1e3a1e; }
+
+  .card {
+    width: 150px;
+    height: 45px;
+    background: #4CAF50;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+    position: relative;
+  }
+
+  .card.notch::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid #4CAF50;
+  }
+
+  .card.tab::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 8px;
+    background: #3a8f3a;
+    border-radius: 0 0 4px 4px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="panel">
+    <div class="panel-title">Tároló</div>
+    <div class="tray" id="tray-left">
+      <div class="slot"><div class="card" draggable="true" data-id="kg_co2">KG CO2</div></div>
+      <div class="slot"><div class="card" draggable="true" data-id="wash">Mosás</div></div>
+      <div class="slot"><div class="card" draggable="true" data-id="bp_paris">BP→Párizs</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Bal panel</div>
+    <div class="slot" id="left-0"></div>
+    <div class="slot" id="left-1"></div>
+    <div class="slot" id="left-2"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Jobb panel</div>
+    <div class="slot" id="right-0"></div>
+    <div class="slot" id="right-1"></div>
+    <div class="slot" id="right-2"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Tároló</div>
+    <div class="tray" id="tray-right">
+      <div class="slot"><div class="card" draggable="true" data-id="kg_saved">KG Megtakarítás</div></div>
+      <div class="slot"><div class="card" draggable="true" data-id="kwh">kWh</div></div>
+      <div class="slot"><div class="card" draggable="true" data-id="house">Háztartás</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let dragged = null;
+  let source = null;
+
+  function isPanelSlot(slot) {
+    return slot.id.startsWith('left') || slot.id.startsWith('right');
+  }
+
+  function isBlocked(slot) {
+    if (!isPanelSlot(slot)) return false;
+    const [panel, idx] = [slot.id.slice(0, -2), parseInt(slot.id.slice(-1))];
+    if (idx === 0) return false;
+    const prev = document.getElementById(panel + (idx - 1));
+    return !prev.querySelector('.card');
+  }
+
+  function updateStyles() {
+    ['left', 'right'].forEach(p => {
+      for (let i = 0; i < 3; i++) {
+        const card = document.getElementById(p + '-' + i)?.querySelector('.card');
+        if (!card) continue;
+        card.classList.remove('notch', 'tab');
+        const next = document.getElementById(p + '-' + (i + 1))?.querySelector('.card');
+        card.classList.add(next ? 'tab' : 'notch');
+      }
+    });
+  }
+
+  function setup() {
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('dragstart', () => {
+        dragged = card;
+        source = card.parentElement;
+        setTimeout(() => card.style.opacity = '0.4', 0);
+      });
+      card.addEventListener('dragend', () => {
+        card.style.opacity = '1';
+        updateStyles();
+      });
+    });
+
+    document.querySelectorAll('.slot').forEach(slot => {
+      slot.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!isBlocked(slot)) slot.classList.add('dragover');
+      });
+      slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        slot.classList.remove('dragover');
+        if (!dragged || isBlocked(slot)) return;
+        const existing = slot.querySelector('.card');
+        if (existing) source.appendChild(existing);
+        slot.appendChild(dragged);
+        setup();
+        updateStyles();
+      });
+    });
+  }
+
+  setup();
+  updateStyles();
+</script>
+</body>
+</html>
