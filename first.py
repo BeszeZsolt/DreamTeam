@@ -3,6 +3,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import json
 import streamlit.components.v1 as components
+import base64
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
@@ -30,6 +31,10 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
 ]
+# ── Drag&drop ─────────────────────────────────────────────────────────────────
+def img_to_base64(path):
+    with open(path, "rb") as f:
+        return "data:image/png;base64," + base64.b64encode(f.read()).decode()
 # ── Számítások ────────────────────────────────────────────────────────────────
 
 def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
@@ -155,12 +160,23 @@ if st.button("Infografika generálása"):
     img = generate_infographic(stats)
     st.image(img)
 
-
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
 st.divider()
+
 with open("drag_drop.html", "r") as f:
-    components.html(f.read(), height=1800, scrolling=True)
+    html = f.read()
+
+card_images = [
+    "balkg", "balkg_lent", "balkocsi", "balkocsi_lent",
+    "balmosas", "balmosas_lent", "jobbcsalad", "jobbcsalad_lent",
+    "jobbkg", "jobbkg_lent", "jobbvillany", "jobbvillany_lent"
+]
+
+for name in card_images:
+    html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
+
+components.html(html, height=1800, scrolling=True)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
