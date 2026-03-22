@@ -11,13 +11,13 @@
     margin: 0;
   }
 
-  .container { display: flex; gap: 30px; align-items: center; justify-content: center; }
+  .container { display: flex; gap: 30px; align-items: flex-start; justify-content: center; }
   .panel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .panel-title { color: white; font-weight: bold; margin-bottom: 8px; }
 
   .middle {
     width: 120px;
-    height: 165px;
+    height: 1614px;
     background: #3a3a3a;
     border-radius: 10px;
     display: flex;
@@ -35,7 +35,7 @@
     content: '';
     position: absolute;
     right: -12px;
-    bottom: 20px;
+    bottom: 250px;
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
     border-left: 12px solid #4CAF50;
@@ -55,7 +55,6 @@
 
   .tray-slot {
     width: 160px;
-    height: 55px;
     border: 2px dashed #555;
     border-radius: 8px;
     display: flex;
@@ -63,13 +62,14 @@
     justify-content: center;
     background: #2a2a2a;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   .panel-slots {
     display: flex;
     flex-direction: column-reverse;
-    width: 160px;
-    height: 165px;
+    width: 320px;
+    height: 1614px;
     border-radius: 10px;
     background: #2a2a2a;
     overflow: visible;
@@ -79,8 +79,7 @@
   .panel-slots.dragover { background: #1e3a1e; }
 
   .slot {
-    width: 160px;
-    height: 55px;
+    width: 320px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -91,22 +90,26 @@
   .slot.slot-dragover { background: #2e4a2e; }
 
   .card {
-    width: 160px;
-    height: 55px;
-    background: #4CAF50;
-    border: 2px solid #2d7a2d;
+    background: transparent;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-weight: bold;
     cursor: grab;
     user-select: none;
     position: relative;
     z-index: 1;
     box-sizing: border-box;
     overflow: visible;
+  }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    border-radius: 4px;
+    display: block;
+    pointer-events: none;
   }
 
   .card.dragging { opacity: 0.4; }
@@ -136,8 +139,7 @@
   }
 
   .empty-slot {
-    width: 160px;
-    height: 55px;
+    width: 320px;
     background: transparent;
   }
 </style>
@@ -168,12 +170,12 @@
 
 <script>
   const CARDS = {
-    kg_co2:   { label: 'KG CO2',          side: 'left'  },
-    wash:     { label: 'Mosás',            side: 'left'  },
-    bp_paris: { label: 'BP→Párizs',        side: 'left'  },
-    kg_saved: { label: 'KG Megtakarítás', side: 'right' },
-    kwh:      { label: 'kWh',             side: 'right' },
-    house:    { label: 'Háztartás',       side: 'right' },
+    kg_co2:   { label: 'KG CO2',          side: 'left',  h: 533, img_normal: '/app/static/cards/balkg.png',        img_lent: '/app/static/cards/balkg_lent.png'        },
+    wash:     { label: 'Mosás',            side: 'left',  h: 573, img_normal: '/app/static/cards/balmosas.png',     img_lent: '/app/static/cards/balmosas_lent.png'     },
+    bp_paris: { label: 'BP→Párizs',        side: 'left',  h: 508, img_normal: '/app/static/cards/balkocsi.png',    img_lent: '/app/static/cards/balkocsi_lent.png'     },
+    kg_saved: { label: 'KG Megtakarítás', side: 'right', h: 532, img_normal: '/app/static/cards/jobbkg.png',      img_lent: '/app/static/cards/jobbkg_lent.png'       },
+    kwh:      { label: 'kWh',             side: 'right', h: 581, img_normal: '/app/static/cards/jobbvillany.png',  img_lent: '/app/static/cards/jobbvillany_lent.png'  },
+    house:    { label: 'Háztartás',       side: 'right', h: 501, img_normal: '/app/static/cards/jobbcsalad.png',   img_lent: '/app/static/cards/jobbcsalad_lent.png'   },
   };
 
   let state = {
@@ -204,7 +206,13 @@
     [0, 1, 2].forEach(i => {
       const slot = document.createElement('div');
       slot.className = 'tray-slot';
-      if (cards[i]) slot.appendChild(makeCard(cards[i], 'tray'));
+      if (cards[i]) {
+        const card = makeCard(cards[i], 'tray');
+        slot.style.height = card.style.height;
+        slot.appendChild(card);
+      } else {
+        slot.style.height = '80px';
+      }
       el.appendChild(slot);
     });
 
@@ -237,12 +245,14 @@
     for (let i = 0; i < 3; i++) {
       const slot = document.createElement('div');
       slot.className = 'slot';
+      slot.style.height = cards[i] ? `${CARDS[cards[i]].h}px` : '0px';
 
       if (cards[i]) {
         slot.appendChild(makeCard(cards[i], panelId, i));
       } else {
         const empty = document.createElement('div');
         empty.className = 'empty-slot';
+        empty.style.height = '0px';
         slot.appendChild(empty);
       }
 
@@ -303,7 +313,25 @@
     const card = document.createElement('div');
     card.className = 'card';
     card.draggable = true;
-    card.textContent = CARDS[id].label;
+
+    const img = document.createElement('img');
+
+    if (context === 'tray') {
+      const origH = CARDS[id].h;
+      const origW = 320;
+      const trayW = 156;
+      const trayH = Math.round((origH / origW) * trayW);
+      card.style.width = `${trayW}px`;
+      card.style.height = `${trayH}px`;
+      img.src = CARDS[id].img_normal;
+    } else {
+      const isLent = idx === 0;
+      card.style.width = '320px';
+      card.style.height = `${CARDS[id].h}px`;
+      img.src = isLent ? CARDS[id].img_lent : CARDS[id].img_normal;
+    }
+
+    card.appendChild(img);
 
     if (context === 'left' && idx === 0) {
       card.classList.add('right-tab');
