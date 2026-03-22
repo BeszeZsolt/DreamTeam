@@ -160,7 +160,7 @@ if st.button("Infografika generálása"):
 
 st.divider()
 with open("drag_drop.html", "r") as f:
-    components.html(f.read(), height=500)
+    components.html(f.read(), height=1800, scrolling=True)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
