@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import json
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
@@ -153,6 +154,13 @@ if st.button("Infografika generálása"):
         stats = data["by_pagetype"][sel_oldal]
     img = generate_infographic(stats)
     st.image(img)
+
+
+# ── Drag&drop ─────────────────────────────────────────────────────────────────
+
+st.divider()
+with open("drag_drop.html", "r") as f:
+    components.html(f.read(), height=500)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
