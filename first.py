@@ -171,9 +171,9 @@ with open("drag_drop.html", "r") as f:
     html = f.read()
 
 card_images = [
-    "balkg", "balkg_lent", "balkocsi", "balkocsi_lent",
-    "balmosas", "balmosas_lent", "jobbcsalad", "jobbcsalad_lent",
-    "jobbkg", "jobbkg_lent", "jobbvillany", "jobbvillany_lent"
+    "ora_egyedul", "ora_bal", "ora_jobb", "ora_mindketto",
+    "sima_tarolo_bal", "sima_fent_bal", "sima_kozep_bal", "sima_lent_bal", "sima_lent_egyedul_bal",
+    "sima_tarolo_jobb", "sima_fent_jobb", "sima_kozep_jobb", "sima_lent_jobb", "sima_lent_egyedul_jobb"
 ]
 
 for name in card_images:
