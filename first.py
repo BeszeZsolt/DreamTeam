@@ -31,10 +31,13 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
 ]
+
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
+
 def img_to_base64(path):
     with open(path, "rb") as f:
         return "data:image/png;base64," + base64.b64encode(f.read()).decode()
+    
 # ── Számítások ────────────────────────────────────────────────────────────────
 
 def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
@@ -176,7 +179,7 @@ card_images = [
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
 
-components.html(html, height=1800, scrolling=True)
+components.html(html, height=500, scrolling=True)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
