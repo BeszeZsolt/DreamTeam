@@ -29,14 +29,13 @@
     flex-direction: column;
     gap: 6px;
     width: 140px;
-    height: 300px;
     box-sizing: border-box;
   }
 
   .tray.dragover { background: #1e3a1e; }
 
   .tray-slot {
-    width: 120px;
+    width: auto;
     border: 2px dashed #555;
     border-radius: 8px;
     display: flex;
@@ -45,6 +44,7 @@
     background: #2a2a2a;
     box-sizing: border-box;
     overflow: hidden;
+    padding: 4px;
   }
 
   .panel-slots {
@@ -91,7 +91,6 @@
   .middle-img {
     display: block;
     pointer-events: none;
-    object-fit: contain;
   }
 </style>
 </head>
@@ -108,8 +107,7 @@
       <div class="panel-slots" id="left" style="width:265px; height:231px;"></div>
     </div>
     <div class="panel">
-      <div class="panel-title">Középső</div>
-      <img id="middle" class="middle-img" style="height:231px; width:auto;" src="cards2/ora_egyedul.png"/>
+      <img id="middle" class="middle-img" style="padding-top:16px; height:247px; width:256px;" src="cards/ora_egyedul.png"/>
     </div>
     <div class="panel">
       <div class="panel-title">Jobb panel</div>
@@ -128,37 +126,37 @@
 
   const IMGS = {
     bal: {
-      tarolo:       'cards2/sima_tarolo_bal.png',
-      fent:         'cards2/sima_fent_bal.png',
-      kozep:        'cards2/sima_kozep_bal.png',
-      lent:         'cards2/sima_lent_bal.png',
-      lent_egyedul: 'cards2/sima_lent_egyedul_bal.png',
+      tarolo:       'cards/sima_tarolo_bal.png',
+      fent:         'cards/sima_fent_bal.png',
+      kozep:        'cards/sima_kozep_bal.png',
+      lent:         'cards/sima_lent_bal.png',
+      lent_egyedul: 'cards/sima_lent_egyedul_bal.png',
     },
     jobb: {
-      tarolo:       'cards2/sima_tarolo_jobb.png',
-      fent:         'cards2/sima_fent_jobb.png',
-      kozep:        'cards2/sima_kozep_jobb.png',
-      lent:         'cards2/sima_lent_jobb.png',
-      lent_egyedul: 'cards2/sima_lent_egyedul_jobb.png',
+      tarolo:       'cards/sima_tarolo_jobb.png',
+      fent:         'cards/sima_fent_jobb.png',
+      kozep:        'cards/sima_kozep_jobb.png',
+      lent:         'cards/sima_lent_jobb.png',
+      lent_egyedul: 'cards/sima_lent_egyedul_jobb.png',
     },
     ora: {
-      egyedul:   'cards2/ora_egyedul.png',
-      bal:       'cards2/ora_bal.png',
-      jobb:      'cards2/ora_jobb.png',
-      mindketto: 'cards2/ora_mindketto.png',
+      egyedul:   'cards/ora_egyedul.png',
+      bal:       'cards/ora_bal.png',
+      jobb:      'cards/ora_jobb.png',
+      mindketto: 'cards/ora_mindketto.png',
     }
   };
 
   const DIMS = {
     bal: {
-      tarolo:       { w: 120, h: 60  },
+      tarolo:       { w: 120, h: 39 },
       fent:         { w: Math.round(320 * SCALE), h: Math.round(97  * SCALE) },
       kozep:        { w: Math.round(320 * SCALE), h: Math.round(97  * SCALE) },
       lent:         { w: Math.round(353 * SCALE), h: Math.round(104 * SCALE) },
       lent_egyedul: { w: Math.round(353 * SCALE), h: Math.round(104 * SCALE) },
     },
     jobb: {
-      tarolo:       { w: 120, h: 60  },
+      tarolo:       { w: 120, h: 39 },
       fent:         { w: Math.round(320 * SCALE), h: Math.round(97  * SCALE) },
       kozep:        { w: Math.round(320 * SCALE), h: Math.round(97  * SCALE) },
       lent:         { w: Math.round(320 * SCALE), h: Math.round(104 * SCALE) },
@@ -223,10 +221,9 @@
       slot.className = 'tray-slot';
       if (cards[i]) {
         const card = makeCard(cards[i], 'tray');
-        slot.style.height = card.style.height;
         slot.appendChild(card);
       } else {
-        slot.style.height = '60px';
+        slot.style.height = '47px';
       }
       el.appendChild(slot);
     });
@@ -344,7 +341,7 @@
 
     if (context === 'tray') {
       card.style.width = '120px';
-      card.style.height = '60px';
+      card.style.height = '39px';
       img.src = IMGS[side].tarolo;
     } else {
       const st = getState(context, idx, total);
