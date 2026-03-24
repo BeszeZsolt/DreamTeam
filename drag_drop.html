@@ -6,9 +6,35 @@
     font-family: sans-serif;
     background: #1a1a1a;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     padding: 20px;
     margin: 0;
+  }
+
+  .selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .selector button {
+    background: #2a2a2a;
+    color: #aaa;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .selector button.active {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
   }
 
   .container { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
@@ -177,6 +203,9 @@
 </style>
 </head>
 <body>
+
+<div class="selector" id="selector"></div>
+
 <div class="container">
   <div class="panel">
     <div class="panel-title">Tároló</div>
@@ -191,7 +220,7 @@
     <div class="panel">
       <div class="middle-wrapper">
         <img id="middle" class="middle-img" style="height:247px; width:256px;" src="cards/ora_egyedul.png"/>
-        <span class="middle-value">{{red_pct}}</span>
+        <span class="middle-value" id="middle-value"></span>
       </div>
     </div>
     <div class="panel">
@@ -207,6 +236,15 @@
 </div>
 
 <script>
+  const ALL_STATS = '{{ALL_STATS}}';
+  let allStats = {};
+  let currentPage = '';
+
+  try {
+    allStats = JSON.parse(ALL_STATS);
+    currentPage = Object.keys(allStats)[0];
+  } catch(e) {}
+
   const SCALE = 0.75;
 
   const IMGS = {
@@ -252,15 +290,15 @@
   const PANEL_H = Math.round(308 * SCALE);
 
   const CARDS = {
-    kg_co2:   { side: 'left',  icon: 'cards/kg.png',        value: '{{kg_co2}}'         },
-    wash:     { side: 'left',  icon: 'cards/washing.png',   value: '{{wash}}'           },
-    bp_paris: { side: 'left',  icon: 'cards/car.png',       value: '{{bp_paris_trips}}' },
-    kg_saved: { side: 'right', icon: 'cards/kg.png',        value: '{{kg_saved}}'       },
-    kwh:      { side: 'right', icon: 'cards/light.png',     value: '{{kwh}}'            },
-    house:    { side: 'right', icon: 'cards/household.png', value: '{{house}}'          },
+    kg_co2:   { side: 'left',  icon: 'cards/kg.png',        valueKey: 'kg_co2'         },
+    wash:     { side: 'left',  icon: 'cards/washing.png',   valueKey: 'wash'           },
+    bp_paris: { side: 'left',  icon: 'cards/car.png',       valueKey: 'bp_paris_trips' },
+    kg_saved: { side: 'right', icon: 'cards/kg.png',        valueKey: 'kg_saved'       },
+    kwh:      { side: 'right', icon: 'cards/light.png',     valueKey: 'kwh'            },
+    house:    { side: 'right', icon: 'cards/household.png', valueKey: 'house'          },
   };
 
-  let state = {
+  let panelState = {
     trayLeft:  ['kg_co2', 'wash', 'bp_paris'],
     trayRight: ['kg_saved', 'kwh', 'house'],
     left:  [],
@@ -268,6 +306,36 @@
   };
 
   let dragged = null;
+
+  function getValue(cardId) {
+    const key = CARDS[cardId].valueKey;
+    return allStats[currentPage] ? allStats[currentPage][key] : '';
+  }
+
+  function buildSelector() {
+    const el = document.getElementById('selector');
+    el.innerHTML = '';
+    Object.keys(allStats).forEach(page => {
+      const btn = document.createElement('button');
+      btn.textContent = page;
+      btn.className = page === currentPage ? 'active' : '';
+      btn.onclick = () => {
+        currentPage = page;
+        document.querySelectorAll('.selector button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateValues();
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  function updateValues() {
+    document.querySelectorAll('.card-value, .card-value-indent, .card-value-tray').forEach(el => {
+      const cardId = el.dataset.cardId;
+      if (cardId) el.textContent = getValue(cardId);
+    });
+    document.getElementById('middle-value').textContent = allStats[currentPage]?.red_pct || '';
+  }
 
   function getState(panelId, idx, total) {
     if (total === 1) return 'lent_egyedul';
@@ -281,8 +349,8 @@
   }
 
   function updateMiddle() {
-    const hasLeft  = state.left.length > 0;
-    const hasRight = state.right.length > 0;
+    const hasLeft  = panelState.left.length > 0;
+    const hasRight = panelState.right.length > 0;
     let key = 'egyedul';
     if (hasLeft && hasRight) key = 'mindketto';
     else if (hasLeft) key = 'bal';
@@ -291,11 +359,12 @@
   }
 
   function render() {
-    renderTray('tray-left', state.trayLeft, 'left');
-    renderTray('tray-right', state.trayRight, 'right');
-    renderPanel('left', state.left);
-    renderPanel('right', state.right);
+    renderTray('tray-left', panelState.trayLeft, 'left');
+    renderTray('tray-right', panelState.trayRight, 'right');
+    renderPanel('left', panelState.left);
+    renderPanel('right', panelState.right);
     updateMiddle();
+    updateValues();
   }
 
   function renderTray(elId, cards, side) {
@@ -326,10 +395,10 @@
       if (!dragged) return;
       if (CARDS[dragged.id].side !== side) return;
       const trayKey = `tray${side === 'left' ? 'Left' : 'Right'}`;
-      if (state[trayKey].includes(dragged.id)) return;
-      if (state[trayKey].length >= 3) return;
+      if (panelState[trayKey].includes(dragged.id)) return;
+      if (panelState[trayKey].length >= 3) return;
       removeFromState(dragged.id, dragged.from);
-      state[trayKey].push(dragged.id);
+      panelState[trayKey].push(dragged.id);
       dragged = null;
       render();
     };
@@ -381,16 +450,16 @@
         if (CARDS[dragged.id].side !== panelId) return;
         const fromPanel = dragged.from;
         if (fromPanel === panelId) {
-          const sourceIdx = state[panelId].indexOf(dragged.id);
+          const sourceIdx = panelState[panelId].indexOf(dragged.id);
           if (sourceIdx === i) return;
-          const newCards = [...state[panelId]];
+          const newCards = [...panelState[panelId]];
           newCards.splice(sourceIdx, 1);
           newCards.splice(i, 0, dragged.id);
-          state[panelId] = newCards;
+          panelState[panelId] = newCards;
         } else {
-          if (state[panelId].length >= 3) return;
+          if (panelState[panelId].length >= 3) return;
           removeFromState(dragged.id, fromPanel);
-          state[panelId].splice(i, 0, dragged.id);
+          panelState[panelId].splice(i, 0, dragged.id);
         }
         dragged = null;
         render();
@@ -408,9 +477,9 @@
       if (!dragged) return;
       if (dragged.from === panelId) return;
       if (CARDS[dragged.id].side !== panelId) return;
-      if (state[panelId].length >= 3) return;
+      if (panelState[panelId].length >= 3) return;
       removeFromState(dragged.id, dragged.from);
-      state[panelId].push(dragged.id);
+      panelState[panelId].push(dragged.id);
       dragged = null;
       render();
     };
@@ -439,7 +508,8 @@
 
       const value = document.createElement('span');
       value.className = 'card-value-tray';
-      value.textContent = CARDS[id].value;
+      value.dataset.cardId = id;
+      value.textContent = getValue(id);
       card.appendChild(value);
     } else {
       const st = getState(context, idx, total);
@@ -456,7 +526,8 @@
 
       const value = document.createElement('span');
       value.className = (context === 'left' && idx === 0) ? 'card-value-indent' : 'card-value';
-      value.textContent = CARDS[id].value;
+      value.dataset.cardId = id;
+      value.textContent = getValue(id);
       card.appendChild(value);
     }
 
@@ -473,16 +544,17 @@
   }
 
   function getFrom(id) {
-    if (state.trayLeft.includes(id)) return 'trayLeft';
-    if (state.trayRight.includes(id)) return 'trayRight';
-    if (state.left.includes(id)) return 'left';
-    if (state.right.includes(id)) return 'right';
+    if (panelState.trayLeft.includes(id)) return 'trayLeft';
+    if (panelState.trayRight.includes(id)) return 'trayRight';
+    if (panelState.left.includes(id)) return 'left';
+    if (panelState.right.includes(id)) return 'right';
   }
 
   function removeFromState(id, from) {
-    state[from] = state[from].filter(c => c !== id);
+    panelState[from] = panelState[from].filter(c => c !== id);
   }
 
+  buildSelector();
   render();
 </script>
 </body>
