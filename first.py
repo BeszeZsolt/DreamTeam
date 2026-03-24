@@ -182,25 +182,32 @@ card_images = [
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
 
-if sel_oldal == "Összesítő":
-    stats = data["summary"]
-else:
-    stats = data["by_pagetype"][sel_oldal]
+import json as json_lib
 
-fields = {
-    "kg_co2":         f"{stats['kg_co2']:,.0f}",
-    "wash":           f"{stats['wash']:,.0f}",
-    "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
-    "kg_saved":       f"{stats['kg_saved']:,.0f}",
-    "kwh":            f"{stats['kwh']:,.0f}",
-    "house":          f"{stats['house']:,.0f}",
-    "red_pct":        f"{stats['red_pct']*100:.1f}%",
-}
+all_stats = {"Összesítő": {
+    "kg_co2":         f"{data['summary']['kg_co2']:,.0f}",
+    "wash":           f"{data['summary']['wash']:,.0f}",
+    "bp_paris_trips": f"{data['summary']['bp_paris_trips']:,.0f}",
+    "kg_saved":       f"{data['summary']['kg_saved']:,.0f}",
+    "kwh":            f"{data['summary']['kwh']:,.0f}",
+    "house":          f"{data['summary']['house']:,.0f}",
+    "red_pct":        f"{data['summary']['red_pct']*100:.1f}%",
+}}
 
-for key, val in fields.items():
-    html = html.replace(f"{{{{{key}}}}}", val)
+for pt, stats in data["by_pagetype"].items():
+    all_stats[pt] = {
+        "kg_co2":         f"{stats['kg_co2']:,.0f}",
+        "wash":           f"{stats['wash']:,.0f}",
+        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
+        "kg_saved":       f"{stats['kg_saved']:,.0f}",
+        "kwh":            f"{stats['kwh']:,.0f}",
+        "house":          f"{stats['house']:,.0f}",
+        "red_pct":        f"{stats['red_pct']*100:.1f}%",
+    }
 
-components.html(html, height=500, scrolling=True)
+html = html.replace("{{ALL_STATS}}", json_lib.dumps(all_stats, ensure_ascii=False))
+
+components.html(html, height=550, scrolling=True)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
