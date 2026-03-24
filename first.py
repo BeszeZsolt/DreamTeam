@@ -162,7 +162,6 @@ if st.button("Infografika generálása"):
         stats = data["by_pagetype"][sel_oldal]
     img = generate_infographic(stats)
     st.image(img)
-
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
 st.divider()
@@ -171,13 +170,35 @@ with open("drag_drop.html", "r") as f:
     html = f.read()
 
 card_images = [
+    "sima_tarolo_bal", "sima_tarolo_jobb",
+    "sima_fent_bal", "sima_fent_jobb",
+    "sima_kozep_bal", "sima_kozep_jobb",
+    "sima_lent_bal", "sima_lent_jobb",
+    "sima_lent_egyedul_bal", "sima_lent_egyedul_jobb",
     "ora_egyedul", "ora_bal", "ora_jobb", "ora_mindketto",
-    "sima_tarolo_bal", "sima_fent_bal", "sima_kozep_bal", "sima_lent_bal", "sima_lent_egyedul_bal",
-    "sima_tarolo_jobb", "sima_fent_jobb", "sima_kozep_jobb", "sima_lent_jobb", "sima_lent_egyedul_jobb"
+    "kg", "washing", "car", "light", "household"
 ]
 
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
+
+if sel_oldal == "Összesítő":
+    stats = data["summary"]
+else:
+    stats = data["by_pagetype"][sel_oldal]
+
+fields = {
+    "kg_co2":         f"{stats['kg_co2']:,.0f}",
+    "wash":           f"{stats['wash']:,.0f}",
+    "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
+    "kg_saved":       f"{stats['kg_saved']:,.0f}",
+    "kwh":            f"{stats['kwh']:,.0f}",
+    "house":          f"{stats['house']:,.0f}",
+    "red_pct":        f"{stats['red_pct']*100:.1f}%",
+}
+
+for key, val in fields.items():
+    html = html.replace(f"{{{{{key}}}}}", val)
 
 components.html(html, height=500, scrolling=True)
 
