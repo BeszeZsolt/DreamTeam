@@ -2,44 +2,64 @@
 <html>
 <head>
 <style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     font-family: sans-serif;
-    background: #1a1a1a;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    margin: 0;
+    background: #f0f7e6;
+    min-height: 100vh;
   }
 
-  .selector {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
+  .page-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
-  .selector button {
-    background: #2a2a2a;
-    color: #aaa;
-    border: 2px solid #444;
+  .bg-img {
+    width: 100%;
+    display: block;
+    pointer-events: none;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .selector-wrapper {
+    position: absolute;
+    top: 1%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .selector-wrapper select {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: 2px solid #4CAF50;
     border-radius: 8px;
-    padding: 6px 14px;
+    padding: 4px 12px;
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.2s;
+    outline: none;
   }
 
-  .selector button.active {
-    background: #4CAF50;
-    color: white;
-    border-color: #4CAF50;
+  .dragdrop-area {
+    position: absolute;
+    top: 42%;
+    left: 1%;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
   }
 
-  .container { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
-  .panel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .panel-title { color: white; font-weight: bold; margin-bottom: 8px; }
+  .panel { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .panel-title { color: white; font-weight: bold; font-size: 12px; margin-bottom: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
 
   .middle-group {
     display: flex;
@@ -48,29 +68,27 @@
   }
 
   .tray {
-    background: #2a2a2a;
-    border-radius: 10px;
-    padding: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: 140px;
-    box-sizing: border-box;
+    gap: 4px;
+    width: 100px;
   }
 
-  .tray.dragover { background: #1e3a1e; }
+  .tray.dragover { background: rgba(30,90,30,0.6); }
 
   .tray-slot {
     width: auto;
     border: 2px dashed #555;
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #2a2a2a;
-    box-sizing: border-box;
+    background: rgba(0,0,0,0.3);
     overflow: hidden;
-    padding: 4px;
+    padding: 3px;
   }
 
   .panel-slots {
@@ -78,7 +96,6 @@
     flex-direction: column-reverse;
     background: transparent;
     overflow: visible;
-    box-sizing: border-box;
   }
 
   .slot {
@@ -89,7 +106,7 @@
     overflow: visible;
   }
 
-  .slot.slot-dragover { background: #2e4a2e; }
+  .slot.slot-dragover { background: rgba(46,74,46,0.5); }
 
   .card {
     background: transparent;
@@ -100,23 +117,20 @@
     user-select: none;
     position: relative;
     z-index: 1;
-    box-sizing: border-box;
     overflow: visible;
   }
 
   .card-bg {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     object-fit: fill;
     pointer-events: none;
   }
 
   .card-icon {
     position: absolute;
-    left: 22px;
+    left: 20px;
     top: 50%;
     transform: translateY(-50%);
     height: 70%;
@@ -125,9 +139,20 @@
     object-fit: contain;
   }
 
+  .card-icon-house {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 85%;
+    width: auto;
+    pointer-events: none;
+    object-fit: contain;
+  }
+
   .card-icon-tray {
     position: absolute;
-    left: 4px;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     height: 60%;
@@ -138,12 +163,12 @@
 
   .card-value {
     position: absolute;
-    right: 12px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     color: white;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 13px;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     white-space: nowrap;
@@ -151,12 +176,12 @@
 
   .card-value-indent {
     position: absolute;
-    right: 38px;
+    right: 28px;
     top: 50%;
     transform: translateY(-50%);
     color: white;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 13px;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     white-space: nowrap;
@@ -164,12 +189,12 @@
 
   .card-value-tray {
     position: absolute;
-    right: 6px;
+    right: 4px;
     top: 50%;
     transform: translateY(-50%);
     color: white;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 10px;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     white-space: nowrap;
@@ -180,7 +205,7 @@
   .middle-wrapper {
     position: relative;
     display: inline-block;
-    padding-top: 16.5px;
+    padding-top: 12px;
   }
 
   .middle-img {
@@ -195,7 +220,7 @@
     transform: translateX(-50%);
     color: #f5f500;
     font-weight: bold;
-    font-size: 28px;
+    font-size: 20px;
     pointer-events: none;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     white-space: nowrap;
@@ -204,34 +229,44 @@
 </head>
 <body>
 
-<div class="selector" id="selector"></div>
+<div class="page-wrapper">
+  <img class="bg-img" src="cards/empty_template.png"/>
 
-<div class="container">
-  <div class="panel">
-    <div class="panel-title">Tároló</div>
-    <div class="tray" id="tray-left"></div>
-  </div>
+  <div class="overlay">
 
-  <div class="middle-group">
-    <div class="panel">
-      <div class="panel-title">Bal panel</div>
-      <div class="panel-slots" id="left" style="width:265px; height:231px;"></div>
+    <div class="selector-wrapper">
+      <select id="selector" onchange="onPageChange(this.value)"></select>
     </div>
-    <div class="panel">
-      <div class="middle-wrapper">
-        <img id="middle" class="middle-img" style="height:247px; width:256px;" src="cards/ora_egyedul.png"/>
-        <span class="middle-value" id="middle-value"></span>
+
+    <div class="dragdrop-area">
+      <div class="panel">
+        <div class="panel-title">Tároló</div>
+        <div class="tray" id="tray-left"></div>
+      </div>
+
+      <div class="middle-group">
+        <div class="panel">
+          <div class="panel-title">Bal panel</div>
+          <div class="panel-slots" id="left" style="width:200px; height:175px;"></div>
+        </div>
+        <div class="panel">
+          <div class="middle-wrapper">
+            <img id="middle" class="middle-img" style="height:187px; width:194px;" src="cards/ora_egyedul.png"/>
+            <span class="middle-value" id="middle-value"></span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Jobb panel</div>
+          <div class="panel-slots" id="right" style="width:180px; height:175px;"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Tároló</div>
+        <div class="tray" id="tray-right"></div>
       </div>
     </div>
-    <div class="panel">
-      <div class="panel-title">Jobb panel</div>
-      <div class="panel-slots" id="right" style="width:240px; height:231px;"></div>
-    </div>
-  </div>
 
-  <div class="panel">
-    <div class="panel-title">Tároló</div>
-    <div class="tray" id="tray-right"></div>
   </div>
 </div>
 
@@ -245,7 +280,8 @@
     currentPage = Object.keys(allStats)[0];
   } catch(e) {}
 
-  const SCALE = 0.75;
+  const SCALE = 0.57;
+  const HOUSE_ICON_SCALE = 0.85;
 
   const IMGS = {
     bal: {
@@ -272,14 +308,14 @@
 
   const DIMS = {
     bal: {
-      tarolo:       { w: 120,                        h: 39                        },
+      tarolo:       { w: 90,                         h: 30                        },
       fent:         { w: Math.round(320 * SCALE),    h: Math.round(97  * SCALE)   },
       kozep:        { w: Math.round(320 * SCALE),    h: Math.round(97  * SCALE)   },
       lent:         { w: Math.round(353 * SCALE),    h: Math.round(104 * SCALE)   },
       lent_egyedul: { w: Math.round(353 * SCALE),    h: Math.round(104 * SCALE)   },
     },
     jobb: {
-      tarolo:       { w: 120,                        h: 39                        },
+      tarolo:       { w: 90,                         h: 30                        },
       fent:         { w: Math.round(320 * SCALE),    h: Math.round(97  * SCALE)   },
       kozep:        { w: Math.round(320 * SCALE),    h: Math.round(97  * SCALE)   },
       lent:         { w: Math.round(320 * SCALE),    h: Math.round(104 * SCALE)   },
@@ -312,20 +348,20 @@
     return allStats[currentPage] ? allStats[currentPage][key] : '';
   }
 
+  function onPageChange(page) {
+    currentPage = page;
+    updateValues();
+  }
+
   function buildSelector() {
     const el = document.getElementById('selector');
     el.innerHTML = '';
     Object.keys(allStats).forEach(page => {
-      const btn = document.createElement('button');
-      btn.textContent = page;
-      btn.className = page === currentPage ? 'active' : '';
-      btn.onclick = () => {
-        currentPage = page;
-        document.querySelectorAll('.selector button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        updateValues();
-      };
-      el.appendChild(btn);
+      const opt = document.createElement('option');
+      opt.value = page;
+      opt.textContent = page;
+      if (page === currentPage) opt.selected = true;
+      el.appendChild(opt);
     });
   }
 
@@ -377,18 +413,13 @@
         const card = makeCard(cards[i], 'tray');
         slot.appendChild(card);
       } else {
-        slot.style.height = '47px';
+        slot.style.height = '34px';
       }
       el.appendChild(slot);
     });
 
-    el.ondragover = e => {
-      e.preventDefault();
-      el.classList.add('dragover');
-    };
-    el.ondragleave = e => {
-      if (!el.contains(e.relatedTarget)) el.classList.remove('dragover');
-    };
+    el.ondragover = e => { e.preventDefault(); el.classList.add('dragover'); };
+    el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
     el.ondrop = e => {
       e.preventDefault();
       el.classList.remove('dragover');
@@ -430,18 +461,12 @@
       } else {
         slot.style.width = `${DIMS[side].fent.w}px`;
         slot.style.height = `${emptyH}px`;
-        slot.style.background = '#333';
+        slot.style.background = 'rgba(51,51,51,0.6)';
         slot.style.borderRadius = '6px';
       }
 
-      slot.ondragover = e => {
-        e.preventDefault();
-        e.stopPropagation();
-        slot.classList.add('slot-dragover');
-      };
-      slot.ondragleave = e => {
-        if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover');
-      };
+      slot.ondragover = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
+      slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
       slot.ondrop = e => {
         e.preventDefault();
         e.stopPropagation();
@@ -469,9 +494,7 @@
     }
 
     el.ondragover = e => e.preventDefault();
-    el.ondragleave = e => {
-      if (!el.contains(e.relatedTarget)) el.classList.remove('dragover');
-    };
+    el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
     el.ondrop = e => {
       e.preventDefault();
       if (!dragged) return;
@@ -491,13 +514,12 @@
     card.draggable = true;
 
     const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
-
     const bg = document.createElement('img');
     bg.className = 'card-bg';
 
     if (context === 'tray') {
-      card.style.width = '120px';
-      card.style.height = '39px';
+      card.style.width = '90px';
+      card.style.height = '30px';
       bg.src = IMGS[side].tarolo;
       card.appendChild(bg);
 
@@ -520,7 +542,7 @@
       card.appendChild(bg);
 
       const icon = document.createElement('img');
-      icon.className = 'card-icon';
+      icon.className = id === 'house' ? 'card-icon-house' : 'card-icon';
       icon.src = CARDS[id].icon;
       card.appendChild(icon);
 
