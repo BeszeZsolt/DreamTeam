@@ -139,29 +139,7 @@ data = calc_all(df)
 
 st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
 
-# ── Számítások megjelenítése ──────────────────────────────────────────────────
 
-st.divider()
-
-page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
-sel_oldal = st.radio("Oldal", page_options, horizontal=True)
-
-if sel_oldal == "Összesítő":
-    st.json(data["summary"])
-else:
-    st.json(data["by_pagetype"][sel_oldal])
-
-# ── Infografika ───────────────────────────────────────────────────────────────
-
-st.divider()
-
-if st.button("Infografika generálása"):
-    if sel_oldal == "Összesítő":
-        stats = data["summary"]
-    else:
-        stats = data["by_pagetype"][sel_oldal]
-    img = generate_infographic(stats)
-    st.image(img)
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
 st.divider()
@@ -176,7 +154,8 @@ card_images = [
     "sima_lent_bal", "sima_lent_jobb",
     "sima_lent_egyedul_bal", "sima_lent_egyedul_jobb",
     "ora_egyedul", "ora_bal", "ora_jobb", "ora_mindketto",
-    "kg", "washing", "car", "light", "household"
+    "kg", "washing", "car", "light", "household",
+    "empty_template"
 ]
 
 for name in card_images:
@@ -208,6 +187,30 @@ for pt, stats in data["by_pagetype"].items():
 html = html.replace("{{ALL_STATS}}", json_lib.dumps(all_stats, ensure_ascii=False))
 
 components.html(html, height=550, scrolling=True)
+
+# ── Számítások megjelenítése ──────────────────────────────────────────────────
+
+st.divider()
+
+page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
+sel_oldal = st.radio("Oldal", page_options, horizontal=True)
+
+if sel_oldal == "Összesítő":
+    st.json(data["summary"])
+else:
+    st.json(data["by_pagetype"][sel_oldal])
+
+# ── Infografika ───────────────────────────────────────────────────────────────
+
+st.divider()
+
+if st.button("Infografika generálása"):
+    if sel_oldal == "Összesítő":
+        stats = data["summary"]
+    else:
+        stats = data["by_pagetype"][sel_oldal]
+    img = generate_infographic(stats)
+    st.image(img)
 
 # ── Részletes nézet ───────────────────────────────────────────────────────────
 
