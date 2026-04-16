@@ -5,6 +5,10 @@ import json
 import streamlit.components.v1 as components
 import base64
 
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+
+
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
 # ── Statikus konstansok ───────────────────────────────────────────────────────
@@ -239,3 +243,70 @@ if reszletes:
         filtered = df[df["website"] == sel_ceg].copy()
 
     st.dataframe(filtered.reset_index(drop=True), width='stretch')
+
+
+
+
+
+
+
+
+
+# ── Távolságkalkulátor ────────────────────────────────────────────────────────
+
+st.divider()
+st.subheader("🚗 Útvonal-kalkulátor")
+st.caption("Válassz két helyszínt, és megmutatjuk, hányszor felel meg a carbon kibocsátás annak az útnak.")
+
+@st.cache_data(show_spinner=False)
+def geocode_location(place: str):
+    geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
+    return geolocator.geocode(place)
+
+col_a, col_b = st.columns(2)
+with col_a:
+    loc1 = st.text_input("📍 Kiindulópont", value="Budapest, Hungary")
+with col_b:
+    loc2 = st.text_input("🏁 Célpont", value="Paris, France")
+
+if st.button("Távolság kiszámítása"):
+    with st.spinner("Helyszínek keresése..."):
+        g1 = geocode_location(loc1)
+        g2 = geocode_location(loc2)
+
+    if not g1:
+        st.error(f"Nem találtam meg ezt a helyet: {loc1}")
+    elif not g2:
+        st.error(f"Nem találtam meg ezt a helyet: {loc2}")
+    else:
+        dist_km = geodesic(
+            (g1.latitude, g1.longitude),
+            (g2.latitude, g2.longitude)
+        ).km
+
+        st.success(f"📏 Légvonalbeli távolság: **{dist_km:,.0f} km**")
+        st.caption(f"({g1.address}  →  {g2.address})")
+
+        # Összehasonlítás a carbon adatokkal
+        if "data" in dir() and data:  # csak ha már van feltöltött adat
+            kg_co2_total = data["summary"]["kg_co2"]
+            co2_per_km   = CO2_PER_KM  # 0.215... kg/km – már definiálva van a fájlban
+
+            trips = kg_co2_total / (co2_per_km * dist_km)
+
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Választott útvonal", f"{dist_km:,.0f} km")
+            col2.metric("Összesített CO₂ kibocsátás", f"{kg_co2_total:,.0f} kg")
+            col3.metric("Hányszor teszi meg ezt az utat?", f"{trips:,.0f}×")
+
+            # Kontextus a BP–Párizs referenciával
+            bp_paris_equiv = dist_km / BP_PARIS_KM
+            st.info(
+                f"A választott útvonal **{bp_paris_equiv:.2f}×** a Budapest–Párizs "
+                f"távolságnak ({BP_PARIS_KM} km). "
+                f"Az összes vizsgált weboldal carbon kibocsátása összesen "
+                f"**{trips:,.0f}×** megtételének felel meg."
+            )
+        else:
+            # Ha még nincs adat feltöltve, csak a távolságot mutatjuk
+            st.info("Tölts fel Excel adatfájlt a carbon összehasonlításhoz!")
