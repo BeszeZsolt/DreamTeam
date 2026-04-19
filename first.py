@@ -4,10 +4,9 @@ from PIL import Image, ImageDraw, ImageFont
 import json
 import streamlit.components.v1 as components
 import base64
+import requests
 
 from geopy.geocoders import Nominatim
-from geopy.distance import geodesic
-
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
@@ -18,7 +17,7 @@ CO2_PER_KM    = 0.215118375  # 1 km autózás CO2e-je [kg]
 CO2_PER_KWH   = 0.236150771  # 1 kWh áram CO2-je [kg]
 KWH_PER_HOUSE = 2500         # 1 háztartás éves energiafogyasztása [kWh]
 TOTAL_PV      = 120_000_000  # összes page visit (fixált)
-BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km]
+BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km] (alapértelmezett)
 
 COL_EM_ALL   = "BE - Carbon Emission - all subpages "
 COL_EM_PAGE  = "BE - Carbon Emission - page"
@@ -36,15 +35,24 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission -  all subpages",
 ]
 
+# ── Session state inicializálás ───────────────────────────────────────────────
+
+# Az alapértelmezett referencia-távolság Budapest–Párizs, csak akkor változik
+# ha a kalkulátorban új útvonalat számolnak ki
+if "ref_km" not in st.session_state:
+    st.session_state["ref_km"] = BP_PARIS_KM
+if "ref_label" not in st.session_state:
+    st.session_state["ref_label"] = "Budapest → Párizs"
+
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
 def img_to_base64(path):
     with open(path, "rb") as f:
         return "data:image/png;base64," + base64.b64encode(f.read()).decode()
-    
+
 # ── Számítások ────────────────────────────────────────────────────────────────
 
-def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
+def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str, ref_km: float) -> dict:
     """Emission statisztikák + csökkentési potenciál egy adott oszloppárra."""
     em_avg   = rows[col_em].mean()
     kg_co2   = em_avg * TOTAL_PV / 1000
@@ -58,7 +66,7 @@ def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
         "em_min":         rows[col_em].min(),
         "kg_co2":         kg_co2,
         "wash":           kg_co2 / CO2_PER_WASH,
-        "bp_paris_trips": kg_co2 / CO2_PER_KM / BP_PARIS_KM,
+        "bp_paris_trips": kg_co2 / CO2_PER_KM / ref_km,  # dinamikus referencia
         "red_pct":        red_pct,
         "kg_saved":       kg_saved,
         "kwh":            kwh,
@@ -66,11 +74,11 @@ def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
     }
 
 
-def calc_all(df: pd.DataFrame) -> dict:
+def calc_all(df: pd.DataFrame, ref_km: float) -> dict:
     """Összesítő + oldaltípusonkénti max/avg/min számítások."""
     return {
-        "summary":     calc_stats(df, COL_EM_ALL, COL_RED_ALL),
-        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE) for pt, g in df.groupby("pageType")},
+        "summary":     calc_stats(df, COL_EM_ALL, COL_RED_ALL, ref_km),
+        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE, ref_km) for pt, g in df.groupby("pageType")},
     }
 
 # ── Infografika generálás ─────────────────────────────────────────────────────
@@ -109,6 +117,30 @@ def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infogra
 
     return img
 
+# ── Geocoder segédfüggvények ──────────────────────────────────────────────────
+
+@st.cache_data(show_spinner=False)
+def geocode_location(place: str):
+    geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
+    return geolocator.geocode(place)
+
+@st.cache_data(show_spinner=False)
+def get_road_distance(lat1, lon1, lat2, lon2):
+    """OSRM közúti távolság (ingyenes, nem kell API kulcs)."""
+    url = (
+        f"http://router.project-osrm.org/route/v1/driving/"
+        f"{lon1},{lat1};{lon2},{lat2}"
+        f"?overview=false"
+    )
+    try:
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        if data.get("code") == "Ok":
+            return data["routes"][0]["distance"] / 1000  # méter → km
+        return None
+    except Exception:
+        return None
+
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane infografika készítő")
@@ -139,10 +171,10 @@ if missing:
 df = df.dropna(subset=["website"])
 df["website"] = df["website"].str.strip()
 
-data = calc_all(df)
+# Mindig az aktuális ref_km-mel számolunk
+data = calc_all(df, st.session_state["ref_km"])
 
 st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
-
 
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
@@ -166,6 +198,8 @@ for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
 
 import json as json_lib
+
+ref_km = st.session_state["ref_km"]
 
 all_stats = {"Összesítő": {
     "kg_co2":         f"{data['summary']['kg_co2']:,.0f}",
@@ -198,6 +232,9 @@ st.divider()
 
 page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
 sel_oldal = st.radio("Oldal", page_options, horizontal=True)
+
+# Aktuális referencia megjelenítése
+st.caption(f"📍 Jelenlegi referencia útvonal: **{st.session_state['ref_label']}** ({st.session_state['ref_km']:,.0f} km)")
 
 if sel_oldal == "Összesítő":
     st.json(data["summary"])
@@ -244,42 +281,11 @@ if reszletes:
 
     st.dataframe(filtered.reset_index(drop=True), width='stretch')
 
-
-
-
-
-
-
-
-# Cooking territory
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
 st.divider()
 st.subheader("🚗 Útvonal-kalkulátor")
 st.caption("Válassz két helyszínt, és megmutatjuk, hányszor felel meg a carbon kibocsátás annak az útnak.")
-
-@st.cache_data(show_spinner=False)
-def geocode_location(place: str):
-    geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
-    return geolocator.geocode(place)
-
-@st.cache_data(show_spinner=False)
-def get_road_distance(lat1, lon1, lat2, lon2):
-    """OSRM közúti távolság (ingyenes, nem kell API kulcs)."""
-    import requests
-    url = (
-        f"http://router.project-osrm.org/route/v1/driving/"
-        f"{lon1},{lat1};{lon2},{lat2}"
-        f"?overview=false"
-    )
-    try:
-        resp = requests.get(url, timeout=10)
-        data = resp.json()
-        if data.get("code") == "Ok":
-            return data["routes"][0]["distance"] / 1000  # méter → km
-        return None
-    except Exception:
-        return None
 
 col_a, col_b = st.columns(2)
 with col_a:
@@ -301,13 +307,19 @@ if st.button("Távolság kiszámítása"):
             dist_km = get_road_distance(g1.latitude, g1.longitude, g2.latitude, g2.longitude)
 
         if dist_km is None:
-            st.error("Nem sikerült az útvonalat kiszámítani a két helyszín között. Lehet, hogy nincs közúti összeköttetés (pl. különböző szigetek, kontinensek)?")
+            st.error("Nem sikerült az útvonalat kiszámítani. Lehet, hogy nincs közúti összeköttetés (pl. különböző kontinensek)?")
         else:
-            st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km**")
+            # ── Elmentjük az új referencia-távolságot ──
+            st.session_state["ref_km"]    = dist_km
+            st.session_state["ref_label"] = f"{loc1} → {loc2}"
+
+            st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km** – ez lett az új referencia útvonal!")
             st.caption(f"({g1.address}  →  {g2.address})")
 
-            kg_co2_total = data["summary"]["kg_co2"]
-            trips = kg_co2_total / (CO2_PER_KM * dist_km)
+            # Újraszámolt adatok az új ref_km-mel
+            new_data = calc_all(df, dist_km)
+            kg_co2_total = new_data["summary"]["kg_co2"]
+            trips        = new_data["summary"]["bp_paris_trips"]
 
             col1, col2, col3 = st.columns(3)
             col1.metric("Választott útvonal", f"{dist_km:,.0f} km")
@@ -321,3 +333,5 @@ if st.button("Távolság kiszámítása"):
                 f"Az összes vizsgált weboldal carbon kibocsátása összesen "
                 f"**{trips:,.0f}×** megtételének felel meg."
             )
+
+            st.rerun()  # frissíti a fenti JSON-t és drag&drop kártyákat is
