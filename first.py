@@ -309,29 +309,33 @@ if st.button("Távolság kiszámítása"):
         if dist_km is None:
             st.error("Nem sikerült az útvonalat kiszámítani. Lehet, hogy nincs közúti összeköttetés (pl. különböző kontinensek)?")
         else:
-            # ── Elmentjük az új referencia-távolságot ──
-            st.session_state["ref_km"]    = dist_km
-            st.session_state["ref_label"] = f"{loc1} → {loc2}"
+            st.session_state["ref_km"]        = dist_km
+            st.session_state["ref_label"]     = f"{loc1} → {loc2}"
+            st.session_state["calc_dist_km"]  = dist_km
+            st.session_state["calc_address1"] = g1.address
+            st.session_state["calc_address2"] = g2.address
+            st.rerun()
 
-            st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km** – ez lett az új referencia útvonal!")
-            st.caption(f"({g1.address}  →  {g2.address})")
+# ── Kalkulátor eredménye (rerun után is megmarad) ─────────────────────────────
 
-            # Újraszámolt adatok az új ref_km-mel
-            new_data = calc_all(df, dist_km)
-            kg_co2_total = new_data["summary"]["kg_co2"]
-            trips        = new_data["summary"]["bp_paris_trips"]
+if "calc_dist_km" in st.session_state:
+    dist_km = st.session_state["calc_dist_km"]
+    new_data = calc_all(df, dist_km)
+    kg_co2_total = new_data["summary"]["kg_co2"]
+    trips        = new_data["summary"]["bp_paris_trips"]
 
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Választott útvonal", f"{dist_km:,.0f} km")
-            col2.metric("Összesített CO₂ kibocsátás", f"{kg_co2_total:,.0f} kg")
-            col3.metric("Hányszor teszi meg ezt az utat?", f"{trips:,.0f}×")
+    st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km** – ez lett az új referencia útvonal!")
+    st.caption(f"({st.session_state['calc_address1']}  →  {st.session_state['calc_address2']})")
 
-            bp_paris_equiv = dist_km / BP_PARIS_KM
-            st.info(
-                f"A választott útvonal **{bp_paris_equiv:.2f}×** a Budapest–Párizs "
-                f"távolságnak ({BP_PARIS_KM} km). "
-                f"Az összes vizsgált weboldal carbon kibocsátása összesen "
-                f"**{trips:,.0f}×** megtételének felel meg."
-            )
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Választott útvonal", f"{dist_km:,.0f} km")
+    col2.metric("Összesített CO₂ kibocsátás", f"{kg_co2_total:,.0f} kg")
+    col3.metric("Hányszor teszi meg ezt az utat?", f"{trips:,.0f}×")
 
-            st.rerun()  # frissíti a fenti JSON-t és drag&drop kártyákat is
+    bp_paris_equiv = dist_km / BP_PARIS_KM
+    st.info(
+        f"A választott útvonal **{bp_paris_equiv:.2f}×** a Budapest–Párizs "
+        f"távolságnak ({BP_PARIS_KM} km). "
+        f"Az összes vizsgált weboldal carbon kibocsátása összesen "
+        f"**{trips:,.0f}×** megtételének felel meg."
+    )
