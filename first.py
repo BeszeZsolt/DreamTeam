@@ -9,6 +9,7 @@ import time
 
 from geopy.geocoders import Nominatim
 
+
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
 # ── Statikus konstansok ───────────────────────────────────────────────────────
