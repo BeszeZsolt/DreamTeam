@@ -5,6 +5,7 @@ import json
 import streamlit.components.v1 as components
 import base64
 import requests
+import time
 
 from geopy.geocoders import Nominatim
 
@@ -37,8 +38,6 @@ REQUIRED_COLUMNS = [
 
 # ── Session state inicializálás ───────────────────────────────────────────────
 
-# Az alapértelmezett referencia-távolság Budapest–Párizs, csak akkor változik
-# ha a kalkulátorban új útvonalat számolnak ki
 if "ref_km" not in st.session_state:
     st.session_state["ref_km"] = BP_PARIS_KM
 if "ref_label" not in st.session_state:
@@ -132,7 +131,7 @@ def geocode_location(place: str):
                 time.sleep(2 ** attempt)  # 1mp, 2mp várakozás újrapróbálás előtt
             else:
                 raise e
- 
+
 @st.cache_data(show_spinner=False)
 def get_road_distance(lat1, lon1, lat2, lon2):
     """OSRM közúti távolság (ingyenes, nem kell API kulcs)."""
@@ -207,8 +206,6 @@ for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
 
 import json as json_lib
-
-ref_km = st.session_state["ref_km"]
 
 all_stats = {"Összesítő": {
     "kg_co2":         f"{data['summary']['kg_co2']:,.0f}",
