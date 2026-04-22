@@ -122,8 +122,17 @@ def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infogra
 @st.cache_data(show_spinner=False)
 def geocode_location(place: str):
     geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
-    return geolocator.geocode(place)
-
+    for attempt in range(3):  # max 3 próbálkozás
+        try:
+            time.sleep(1)  # Nominatim megköveteli az 1mp várakozást
+            result = geolocator.geocode(place)
+            return result
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(2 ** attempt)  # 1mp, 2mp várakozás újrapróbálás előtt
+            else:
+                raise e
+ 
 @st.cache_data(show_spinner=False)
 def get_road_distance(lat1, lon1, lat2, lon2):
     """OSRM közúti távolság (ingyenes, nem kell API kulcs)."""
