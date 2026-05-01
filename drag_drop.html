@@ -3,33 +3,28 @@
 <head>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: sans-serif;
-  background: #f0f7e6;
-  min-height: 100vh;
-}
+html, body { font-family: sans-serif; overflow: hidden; }
+
 .page-wrapper {
   position: relative;
   width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
+  aspect-ratio: 1285 / 720;
 }
 .bg-img {
-  width: 100%;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   display: block;
   pointer-events: none;
 }
 .overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
 }
 .selector-wrapper {
   position: absolute;
-  top: 1%;
-  left: 50%;
+  top: 1%; left: 50%;
   transform: translateX(-50%);
 }
 .selector-wrapper select {
@@ -37,38 +32,38 @@ body {
   color: white;
   border: 2px solid #4CAF50;
   border-radius: 8px;
-  padding: 4px 12px;
   cursor: pointer;
-  font-size: 13px;
   outline: none;
 }
 .dragdrop-area {
   position: absolute;
-  top: 50%;
-  left: 1%;
+  top: 50%; left: 1%;
   display: flex;
-  gap: 10px;
   align-items: flex-start;
 }
-.panel { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.panel-title { color: white; font-weight: bold; font-size: 11px; margin-bottom: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.panel-title {
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
 .middle-group {
   display: flex;
-  gap: 0;
   align-items: flex-start;
 }
 .tray {
   background: rgba(0,0,0,0.4);
   border-radius: 8px;
-  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  width: 80px;
 }
 .tray.dragover { background: rgba(30,90,30,0.6); }
 .tray-slot {
-  width: auto;
   border: 2px dashed #555;
   border-radius: 6px;
   display: flex;
@@ -76,12 +71,10 @@ body {
   justify-content: center;
   background: rgba(0,0,0,0.3);
   overflow: hidden;
-  padding: 2px;
 }
 .panel-slots {
   display: flex;
   flex-direction: column-reverse;
-  background: transparent;
   overflow: visible;
 }
 .slot {
@@ -110,68 +103,20 @@ body {
   object-fit: fill;
   pointer-events: none;
 }
-.card-icon {
+.card-icon, .card-icon-house, .card-icon-tray {
   position: absolute;
-  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  height: 70%;
   width: auto;
   pointer-events: none;
   object-fit: contain;
 }
-.card-icon-house {
+.card-value, .card-value-indent, .card-value-tray {
   position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 85%;
-  width: auto;
-  pointer-events: none;
-  object-fit: contain;
-}
-.card-icon-tray {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 60%;
-  width: auto;
-  pointer-events: none;
-  object-fit: contain;
-}
-.card-value {
-  position: absolute;
-  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   color: white;
   font-weight: bold;
-  font-size: 11px;
-  pointer-events: none;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  white-space: nowrap;
-}
-.card-value-indent {
-  position: absolute;
-  right: 22px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-weight: bold;
-  font-size: 11px;
-  pointer-events: none;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  white-space: nowrap;
-}
-.card-value-tray {
-  position: absolute;
-  right: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-weight: bold;
-  font-size: 9px;
   pointer-events: none;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
@@ -180,20 +125,14 @@ body {
 .middle-wrapper {
   position: relative;
   display: inline-block;
-  padding-top: 7.5px;
 }
-.middle-img {
-  display: block;
-  pointer-events: none;
-}
+.middle-img { display: block; pointer-events: none; }
 .middle-value {
   position: absolute;
-  bottom: 22%;
-  left: 45%;
+  bottom: 22%; left: 45%;
   transform: translateX(-50%);
   color: #f5f500;
   font-weight: bold;
-  font-size: 16px;
   pointer-events: none;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
   white-space: nowrap;
@@ -207,29 +146,25 @@ body {
     <div class="selector-wrapper">
       <select id="selector" onchange="onPageChange(this.value)"></select>
     </div>
-    <div class="dragdrop-area">
-      <div class="panel">
-        <div class="panel-title">Tároló</div>
+    <div class="dragdrop-area" id="dragdrop-area">
+      <div class="panel" id="panel-tray-left">
         <div class="tray" id="tray-left"></div>
       </div>
-      <div class="middle-group">
-        <div class="panel">
-          <div class="panel-title">Bal panel</div>
-          <div class="panel-slots" id="left" style="width:160px; height:135px;"></div>
+      <div class="middle-group" id="middle-group">
+        <div class="panel" id="panel-left">
+          <div class="panel-slots" id="left"></div>
         </div>
-        <div class="panel">
-          <div class="middle-wrapper">
-            <img id="middle" class="middle-img" style="height:150px; width:155px;" src="cards/ora_egyedul.png"/>
+        <div class="panel" id="panel-middle">
+          <div class="middle-wrapper" id="middle-wrapper">
+            <img id="middle" class="middle-img" src="cards/ora_egyedul.png"/>
             <span class="middle-value" id="middle-value"></span>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-title">Jobb panel</div>
-          <div class="panel-slots" id="right" style="width:145px; height:135px;"></div>
+        <div class="panel" id="panel-right">
+          <div class="panel-slots" id="right"></div>
         </div>
       </div>
-      <div class="panel">
-        <div class="panel-title">Tároló</div>
+      <div class="panel" id="panel-tray-right">
         <div class="tray" id="tray-right"></div>
       </div>
     </div>
@@ -246,41 +181,101 @@ try {
   currentPage = Object.keys(allStats)[0];
 } catch(e) {}
 
-/* ── Méretrendszer ────────────────────────────────────────────────────────
-   SCALE: az eredeti képméretek (px) szorzója
-   Az eredeti SCALE=0.57 volt, 20%-kal csökkentve: 0.57 * 0.80 = 0.456
+// ── Méretek ────────────────────────────────────────────────────────────
+// Minden w (page-wrapper szélessége) arányában van megadva.
+// Ha valami túl nagy/kicsi, csak a szorzót változtatsd.
 
-   PANEL_H: pontosan a 3 kártyás összmagasság (lent+kozep+fent),
-   hogy az üres slotok ne ugorjanak átrendezéskor.
+function getW() {
+  return document.querySelector('.page-wrapper').offsetWidth;
+}
 
-   Bal 3 kártya összmagasság:
-     lent:  round(104*SCALE) = 47
-     kozep: round(97*SCALE)  = 44
-     fent:  round(97*SCALE)  = 44
-     összesen: 135 px  ← ezt használjuk PANEL_H-ként
-─────────────────────────────────────────────────────────────────────── */
-const SCALE = 0.456;
+function getSizes() {
+  const w = getW();
+  return {
+    // Kártyák
+    card: {
+      bal: {
+        tarolo:       { w: w * 0.100, h: w * 0.034 },
+        fent:         { w: w * 0.200, h: w * 0.061 },
+        kozep:        { w: w * 0.200, h: w * 0.061 },
+        lent:         { w: w * 0.225, h: w * 0.067 },
+        lent_egyedul: { w: w * 0.225, h: w * 0.067 },
+      },
+      jobb: {
+        tarolo:       { w: w * 0.100, h: w * 0.034 },
+        fent:         { w: w * 0.200, h: w * 0.061 },
+        kozep:        { w: w * 0.200, h: w * 0.061 },
+        lent:         { w: w * 0.200, h: w * 0.067 },
+        lent_egyedul: { w: w * 0.200, h: w * 0.067 },
+      }
+    },
+    // Középső óra
+    middle:           { w: w * 0.218, h: w * 0.211 },
+    // Ikonok
+    icon:             { h: w * 0.045, left: w * 0.012 },
+    iconHouse:        { h: w * 0.054, left: w * 0.012 },
+    iconTray:         { h: w * 0.025, left: w * 0.008 },
+    // Betűméretek
+    fontSize:         w * 0.016,
+    fontSizeTray:     w * 0.014,
+    fontSizeMiddle:   w * 0.025,
+    // Értékek pozíciója
+    valueRight:       w * 0.008,
+    valueRightIndent: w * 0.030,
+    // Selector
+    selectorFont:     w * 0.010,
+    selectorPad:      `${w * 0.003}px ${w * 0.009}px`,
+    // Layout
+    gap:         w * 0.014,
+    trayPad:     w * 0.007,
+    trayGap:     w * 0.005,
+    panelGap:    w * 0.005,
+    titleFont:   w * 0.014,
+    titleMargin: w * 0.005,
+    middlePadTop: w * 0.010,
+  };
+}
 
-const DIMS = {
-  bal: {
-    tarolo:       { w: 72,                        h: 24 },
-    fent:         { w: Math.round(320 * SCALE),   h: Math.round(97  * SCALE) },
-    kozep:        { w: Math.round(320 * SCALE),   h: Math.round(97  * SCALE) },
-    lent:         { w: Math.round(353 * SCALE),   h: Math.round(104 * SCALE) },
-    lent_egyedul: { w: Math.round(353 * SCALE),   h: Math.round(104 * SCALE) },
-  },
-  jobb: {
-    tarolo:       { w: 72,                        h: 24 },
-    fent:         { w: Math.round(320 * SCALE),   h: Math.round(97  * SCALE) },
-    kozep:        { w: Math.round(320 * SCALE),   h: Math.round(97  * SCALE) },
-    lent:         { w: Math.round(320 * SCALE),   h: Math.round(104 * SCALE) },
-    lent_egyedul: { w: Math.round(320 * SCALE),   h: Math.round(104 * SCALE) },
-  }
-};
+function applyLayoutSizes() {
+  const s = getSizes();
 
-/* PANEL_H = lent + kozep + fent magasságok összege (bal oldal alapján).
-   Ez a fix érték garantálja, hogy üres slot = az ott lévő kártya mérete. */
-const PANEL_H = DIMS.bal.lent.h + DIMS.bal.kozep.h + DIMS.bal.fent.h;
+  // Dragdrop-area és middle-group gap
+  document.getElementById('dragdrop-area').style.gap = `${s.gap}px`;
+  document.getElementById('middle-group').style.gap  = `${s.gap}px`;
+
+  // Tray-ok
+  ['tray-left', 'tray-right'].forEach(id => {
+    const t = document.getElementById(id);
+    t.style.padding = `${s.trayPad}px`;
+    t.style.gap     = `${s.trayGap}px`;
+  });
+
+  // Panelek gap
+  ['panel-tray-left', 'panel-left', 'panel-middle', 'panel-right', 'panel-tray-right'].forEach(id => {
+    const p = document.getElementById(id);
+    if (p) p.style.gap = `${s.panelGap}px`;
+  });
+
+  // Panel title-ok
+  ['title-tray-left', 'title-left', 'title-right', 'title-tray-right'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) {
+      t.style.fontSize     = `${s.titleFont}px`;
+      t.style.marginBottom = `${s.titleMargin}px`;
+    }
+  });
+
+  // Selector
+  const sel = document.getElementById('selector');
+  sel.style.fontSize = `${s.selectorFont}px`;
+  sel.style.padding  = s.selectorPad;
+
+  // Középső
+  document.getElementById('middle-wrapper').style.paddingTop = `${s.middlePadTop}px`;
+  document.getElementById('middle-value').style.fontSize     = `${s.fontSizeMiddle}px`;
+}
+
+// ── Segédfüggvények ────────────────────────────────────────────────────
 
 const IMGS = {
   bal: {
@@ -298,10 +293,10 @@ const IMGS = {
     lent_egyedul: 'cards/sima_lent_egyedul_jobb.png',
   },
   ora: {
-    egyedul:  'cards/ora_egyedul.png',
-    bal:      'cards/ora_bal.png',
-    jobb:     'cards/ora_jobb.png',
-    mindketto:'cards/ora_mindketto.png',
+    egyedul:   'cards/ora_egyedul.png',
+    bal:       'cards/ora_bal.png',
+    jobb:      'cards/ora_jobb.png',
+    mindketto: 'cards/ora_mindketto.png',
   }
 };
 
@@ -322,8 +317,6 @@ let panelState = {
 };
 
 let dragged = null;
-
-/* ── Segédfüggvények ──────────────────────────────────────────────────── */
 
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
@@ -348,16 +341,12 @@ function buildSelector() {
 }
 
 function updateValues() {
-  document.querySelectorAll('.card-value, .card-value-indent, .card-value-tray').forEach(el => {
-    const cardId = el.dataset.cardId;
-    if (cardId) el.textContent = getValue(cardId);
+  document.querySelectorAll('[data-card-id]').forEach(el => {
+    el.textContent = getValue(el.dataset.cardId);
   });
   document.getElementById('middle-value').textContent = allStats[currentPage]?.red_pct || '';
 }
 
-/* getState: melyik kártya-stílust kell használni az adott pozícióban.
-   idx=0 → lent (legalsó), idx=total-1 → fent (legfelső), közte → kozep.
-   1 kártya esetén lent_egyedul. */
 function getState(panelId, idx, total) {
   if (total === 1) return 'lent_egyedul';
   if (idx === 0)   return 'lent';
@@ -365,8 +354,6 @@ function getState(panelId, idx, total) {
   return 'kozep';
 }
 
-/* getSlotState: mi lenne az adott slot stílusa, ha kártya lenne benne.
-   Az üres slotok méretéhez kell, hogy ne ugorjanak átrendezéskor. */
 function getSlotState(idx) {
   if (idx === 0) return 'lent';
   if (idx === 2) return 'fent';
@@ -384,7 +371,11 @@ function updateMiddle() {
   if (hasLeft && hasRight) key = 'mindketto';
   else if (hasLeft)        key = 'bal';
   else if (hasRight)       key = 'jobb';
-  document.getElementById('middle').src = IMGS.ora[key];
+  const mid = document.getElementById('middle');
+  const s = getSizes();
+  mid.src = IMGS.ora[key];
+  mid.style.width  = `${s.middle.w}px`;
+  mid.style.height = `${s.middle.h}px`;
 }
 
 function getFrom(id) {
@@ -398,9 +389,10 @@ function removeFromState(id, from) {
   panelState[from] = panelState[from].filter(c => c !== id);
 }
 
-/* ── Render ───────────────────────────────────────────────────────────── */
+// ── Render ─────────────────────────────────────────────────────────────
 
 function render() {
+  applyLayoutSizes();
   renderTray('tray-left',  panelState.trayLeft,  'left');
   renderTray('tray-right', panelState.trayRight, 'right');
   renderPanel('left',  panelState.left);
@@ -411,19 +403,21 @@ function render() {
 
 function renderTray(elId, cards, side) {
   const el = document.getElementById(elId);
+  const s = getSizes();
+  const sideKey = side === 'left' ? 'bal' : 'jobb';
+  const dim = s.card[sideKey].tarolo;
   el.innerHTML = '';
+
   [0, 1, 2].forEach(i => {
     const slot = document.createElement('div');
     slot.className = 'tray-slot';
-    if (cards[i]) {
-      slot.appendChild(makeCard(cards[i], 'tray'));
-    } else {
-      slot.style.height = '28px';
-    }
+    slot.style.width  = `${dim.w}px`;
+    slot.style.height = `${dim.h}px`;
+    if (cards[i]) slot.appendChild(makeCard(cards[i], 'tray'));
     el.appendChild(slot);
   });
 
-  el.ondragover = e => { e.preventDefault(); el.classList.add('dragover'); };
+  el.ondragover  = e => { e.preventDefault(); el.classList.add('dragover'); };
   el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
     e.preventDefault();
@@ -445,6 +439,13 @@ function renderPanel(panelId, cards) {
   el.innerHTML = '';
   const side = getSide(panelId);
   const total = cards.length;
+  const s = getSizes();
+  const DIMS = s.card[side];
+
+  const panelH = DIMS.lent.h + DIMS.kozep.h + DIMS.fent.h;
+  const panelW = DIMS.fent.w;
+  el.style.width  = `${panelW}px`;
+  el.style.height = `${panelH}px`;
 
   for (let i = 0; i < 3; i++) {
     const slot = document.createElement('div');
@@ -452,22 +453,19 @@ function renderPanel(panelId, cards) {
 
     if (cards[i]) {
       const st  = getState(panelId, i, total);
-      const dim = DIMS[side][st];
+      const dim = DIMS[st];
       slot.style.width  = `${dim.w}px`;
       slot.style.height = `${dim.h}px`;
       slot.appendChild(makeCard(cards[i], panelId, i, total));
     } else {
-      /* Üres slot: pontosan akkora, mint amilyen kártya ide kerülne.
-         getSlotState(i) adja meg, hogy fent/kozep/lent pozíció-e. */
-      const emptySt  = getSlotState(i);
-      const emptyDim = DIMS[side][emptySt];
+      const emptyDim = DIMS[getSlotState(i)];
       slot.style.width        = `${emptyDim.w}px`;
       slot.style.height       = `${emptyDim.h}px`;
       slot.style.background   = 'rgba(51,51,51,0.6)';
       slot.style.borderRadius = '6px';
     }
 
-    slot.ondragover = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
+    slot.ondragover  = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
     slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
     slot.ondrop = e => {
       e.preventDefault();
@@ -510,51 +508,64 @@ function renderPanel(panelId, cards) {
   };
 }
 
-/* ── Kártya gyártás ───────────────────────────────────────────────────── */
+// ── Kártya gyártás ─────────────────────────────────────────────────────
 
 function makeCard(id, context, idx, total) {
   const card = document.createElement('div');
   card.className = 'card';
   card.draggable = true;
   const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
+  const s = getSizes();
+  const DIMS = s.card[side];
 
   const bg = document.createElement('img');
   bg.className = 'card-bg';
 
   if (context === 'tray') {
-    card.style.width  = '72px';
-    card.style.height = '24px';
+    const dim = DIMS.tarolo;
+    card.style.width  = `${dim.w}px`;
+    card.style.height = `${dim.h}px`;
     bg.src = IMGS[side].tarolo;
     card.appendChild(bg);
 
     const icon = document.createElement('img');
-    icon.className = 'card-icon-tray';
+    icon.className    = 'card-icon-tray';
+    icon.style.height = `${s.iconTray.h}px`;
+    icon.style.left   = `${s.iconTray.left}px`;
     icon.src = CARDS[id].icon;
     card.appendChild(icon);
 
     const value = document.createElement('span');
-    value.className = 'card-value-tray';
+    value.className      = 'card-value-tray';
+    value.style.fontSize = `${s.fontSizeTray}px`;
+    value.style.right    = `${s.valueRight}px`;
     value.dataset.cardId = id;
-    value.textContent = getValue(id);
+    value.textContent    = getValue(id);
     card.appendChild(value);
 
   } else {
     const st  = getState(context, idx, total);
-    const dim = DIMS[side][st];
+    const dim = DIMS[st];
     card.style.width  = `${dim.w}px`;
     card.style.height = `${dim.h}px`;
     bg.src = IMGS[side][st];
     card.appendChild(bg);
 
+    const isHouse  = id === 'house';
     const icon = document.createElement('img');
-    icon.className = id === 'house' ? 'card-icon-house' : 'card-icon';
+    icon.className    = isHouse ? 'card-icon-house' : 'card-icon';
+    icon.style.height = isHouse ? `${s.iconHouse.h}px` : `${s.icon.h}px`;
+    icon.style.left   = isHouse ? `${s.iconHouse.left}px` : `${s.icon.left}px`;
     icon.src = CARDS[id].icon;
     card.appendChild(icon);
 
+    const isIndent = (context === 'left' && idx === 0);
     const value = document.createElement('span');
-    value.className = (context === 'left' && idx === 0) ? 'card-value-indent' : 'card-value';
+    value.className      = isIndent ? 'card-value-indent' : 'card-value';
+    value.style.fontSize = `${s.fontSize}px`;
+    value.style.right    = isIndent ? `${s.valueRightIndent}px` : `${s.valueRight}px`;
     value.dataset.cardId = id;
-    value.textContent = getValue(id);
+    value.textContent    = getValue(id);
     card.appendChild(value);
   }
 
@@ -571,9 +582,17 @@ function makeCard(id, context, idx, total) {
   return card;
 }
 
-/* ── Init ─────────────────────────────────────────────────────────────── */
+// ── Init ───────────────────────────────────────────────────────────────
+
+function resizeHandler() {
+  render();
+  const h = document.querySelector('.page-wrapper').getBoundingClientRect().height;
+  window.parent.postMessage({ type: 'streamlit:setFrameHeight', height: h }, '*');
+}
+
+window.addEventListener('resize', resizeHandler);
 buildSelector();
-render();
+resizeHandler();
 </script>
 </body>
 </html>
