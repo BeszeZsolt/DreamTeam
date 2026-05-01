@@ -230,8 +230,9 @@ for pt, stats in data["by_pagetype"].items():
     }
 
 html = html.replace("{{ALL_STATS}}", json_lib.dumps(all_stats, ensure_ascii=False))
-
-components.html(html, height=550, scrolling=True)
+col1, col2, col3 = st.columns([0.5, 4, 0.5])
+with col2:
+    components.html(html, height=800, scrolling=False)
 
 # ── Számítások megjelenítése ──────────────────────────────────────────────────
 
