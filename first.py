@@ -235,58 +235,58 @@ components.html(html, height=550, scrolling=True)
 
 # ── Számítások megjelenítése ──────────────────────────────────────────────────
 
-st.divider()
+# st.divider()
 
-page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
-sel_oldal = st.radio("Oldal", page_options, horizontal=True)
+# page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
+# sel_oldal = st.radio("Oldal", page_options, horizontal=True)
 
-# Aktuális referencia megjelenítése
-st.caption(f"📍 Jelenlegi referencia útvonal: **{st.session_state['ref_label']}** ({st.session_state['ref_km']:,.0f} km)")
+# # Aktuális referencia megjelenítése
+# st.caption(f"📍 Jelenlegi referencia útvonal: **{st.session_state['ref_label']}** ({st.session_state['ref_km']:,.0f} km)")
 
-if sel_oldal == "Összesítő":
-    st.json(data["summary"])
-else:
-    st.json(data["by_pagetype"][sel_oldal])
+# if sel_oldal == "Összesítő":
+#     st.json(data["summary"])
+# else:
+#     st.json(data["by_pagetype"][sel_oldal])
 
 # ── Infografika ───────────────────────────────────────────────────────────────
 
-st.divider()
+# st.divider()
 
-if st.button("Infografika generálása"):
-    if sel_oldal == "Összesítő":
-        stats = data["summary"]
-    else:
-        stats = data["by_pagetype"][sel_oldal]
-    img = generate_infographic(stats)
-    st.image(img)
+# if st.button("Infografika generálása"):
+#     if sel_oldal == "Összesítő":
+#         stats = data["summary"]
+#     else:
+#         stats = data["by_pagetype"][sel_oldal]
+#     img = generate_infographic(stats)
+#     st.image(img)
 
-# ── Részletes nézet ───────────────────────────────────────────────────────────
+# # ── Részletes nézet ───────────────────────────────────────────────────────────
 
-reszletes = st.toggle("Részletes nézet")
+# reszletes = st.toggle("Részletes nézet")
 
-if reszletes:
-    st.divider()
+# if reszletes:
+#     st.divider()
 
-    scope = st.radio("Megjelenítés", ["Összes weboldal", "Egy weboldal"], horizontal=True)
+#     scope = st.radio("Megjelenítés", ["Összes weboldal", "Egy weboldal"], horizontal=True)
 
-    col1, col2 = st.columns(2)
+#     col1, col2 = st.columns(2)
 
-    if scope == "Összes weboldal":
-        with col1:
-            sel_ipar = st.multiselect("Iparág", sorted(df["industry"].unique()), placeholder="Mind")
-        with col2:
-            sel_oldaltipus = st.multiselect("Oldaltípus", sorted(df["pageType"].unique()), placeholder="Mind")
-        filtered = df.copy()
-        if sel_ipar:
-            filtered = filtered[filtered["industry"].isin(sel_ipar)]
-        if sel_oldaltipus:
-            filtered = filtered[filtered["pageType"].isin(sel_oldaltipus)]
-    else:
-        with col1:
-            sel_ceg = st.selectbox("Válassz weboldalt", sorted(df["website"].unique()))
-        filtered = df[df["website"] == sel_ceg].copy()
+#     if scope == "Összes weboldal":
+#         with col1:
+#             sel_ipar = st.multiselect("Iparág", sorted(df["industry"].unique()), placeholder="Mind")
+#         with col2:
+#             sel_oldaltipus = st.multiselect("Oldaltípus", sorted(df["pageType"].unique()), placeholder="Mind")
+#         filtered = df.copy()
+#         if sel_ipar:
+#             filtered = filtered[filtered["industry"].isin(sel_ipar)]
+#         if sel_oldaltipus:
+#             filtered = filtered[filtered["pageType"].isin(sel_oldaltipus)]
+#     else:
+#         with col1:
+#             sel_ceg = st.selectbox("Válassz weboldalt", sorted(df["website"].unique()))
+#         filtered = df[df["website"] == sel_ceg].copy()
 
-    st.dataframe(filtered.reset_index(drop=True), width='stretch')
+#     st.dataframe(filtered.reset_index(drop=True), width='stretch')
 
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
