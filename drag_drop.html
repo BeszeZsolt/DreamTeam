@@ -8,7 +8,7 @@ html { min-width: 600px; }
 
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: #1a1a2e;
+  background: #f5f2ec;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -17,42 +17,39 @@ body {
   gap: 12px;
 }
 
-/* ── TOP TOOLBAR ── */
 .toolbar {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #eae6de;
+  border: 1px solid #c8bfa8;
   border-radius: 12px;
   padding: 10px 18px;
 }
-
 .toolbar-label {
-  color: #aaa;
-  font-size: 12px;
+  color: #3a4a3a;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
-
 .toolbar select {
-  background: rgba(0,0,0,0.5);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
+  background: #f5f2ec;
+  color: #2d3a2d;
+  border: 1px solid #c8bfa8;
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   outline: none;
   flex: 1;
   max-width: 300px;
 }
-
 .toolbar-spacer { flex: 1; }
-
 .export-btn {
   display: flex;
   align-items: center;
@@ -68,92 +65,81 @@ body {
 }
 .export-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 .export-btn:active { transform: translateY(0); }
-.export-btn.png { background: #4CAF50; color: #fff; }
-.export-btn.pdf { background: #e74c3c; color: #fff; }
+.export-btn.png { background: #5a7a5a; color: #fff; }
 .export-btn svg { flex-shrink: 0; }
 
-/* ── MAIN LAYOUT: sidebar | infographic | sidebar ── */
 .main-layout {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
 }
 
-/* ── SIDEBARS ── */
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 110px;
+  width: 140px;
   flex-shrink: 0;
   padding-top: 4px;
 }
-
 .sidebar-title {
-  color: #aaa;
-  font-size: 11px;
+  color: #3a4a3a;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-align: center;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
-
 .tray {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #eae6de;
+  border: 1px solid #c8bfa8;
   border-radius: 10px;
   padding: 8px 6px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
-
 .tray.dragover {
-  background: rgba(76, 175, 80, 0.15);
-  border-color: #4CAF50;
+  background: #d4ddd4;
+  border-color: #5a7a5a;
 }
-
 .tray-slot {
-  width: 100%;
-  min-height: 34px;
-  border: 1.5px dashed rgba(255,255,255,0.15);
+  width: 130px;
+  height: 50px;
+  border: 1.5px dashed #c8bfa8;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: rgba(0,0,0,0.2);
+  background: rgba(245,242,236,0.6);
   transition: background 0.15s;
 }
-
 .tray-slot.has-card {
   border-style: solid;
   border-color: transparent;
   background: transparent;
 }
 
-/* ── INFOGRAPHIC AREA ── */
 .infographic-wrapper {
   flex: 1;
   position: relative;
-  min-width: 0;
+  min-width: 500px;
 }
-
-/* Minimum szélesség a rajzfelületnek – ez alá nem megy */
 #export-target {
   position: relative;
   width: 100%;
-  min-width: 500px;
+  border-radius: 8px;
+  outline: 3px solid #c8bfa8;
 }
-
 .bg-img {
   width: 100%;
   display: block;
   border-radius: 8px;
 }
-
 .overlay {
   position: absolute;
   top: 0; left: 0;
@@ -161,34 +147,27 @@ body {
   pointer-events: none;
 }
 
-/* ── DRAGDROP AREA ──
-   Fix pixelméretű konténer, amit CSS scale()-lel kicsinyítünk.
-   A top/left %-os pozíció a háttérképhez igazodik.
-   A scale-t JS állítja be dinamikusan.
-*/
 .dragdrop-area {
   position: absolute;
-  top: 52%;
-  left: 6.5%;
+  top: 51.5%;
+  left: 4.5%;
   transform-origin: top left;
   display: flex;
-  gap: 0;               /* nincs gap a panel, óra, panel között */
   align-items: flex-start;
   pointer-events: all;
 }
 
-.panel { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.panel { display: flex; flex-direction: column; align-items: center; }
 
 .panel-slots {
   display: flex;
   flex-direction: column-reverse;
+  justify-content: flex-end;
   background: transparent;
   overflow: visible;
 }
 
-.panel-side {
-  margin-top: 12px;
-}
+.panel-side { margin-top: 18px; }
 
 .slot {
   display: flex;
@@ -198,15 +177,13 @@ body {
   overflow: visible;
   transition: background 0.15s;
 }
-
-.slot.slot-dragover { background: rgba(46,74,46,0.5); border-radius: 6px; }
-
+.slot.slot-dragover { background: rgba(90,122,90,0.15); border-radius: 6px; }
 .empty-slot {
-  background: rgba(51,51,51,0.45);
+  background: rgba(200,191,168,0.3);
   border-radius: 6px;
 }
+.export-hide { visibility: hidden; }
 
-/* ── CARDS – fix pixel méretek, scale() intéz el mindent ── */
 .card {
   background: transparent;
   display: flex;
@@ -219,7 +196,6 @@ body {
   overflow: visible;
 }
 .card:active { cursor: grabbing; }
-
 .card-bg {
   position: absolute;
   top: 0; left: 0;
@@ -227,12 +203,21 @@ body {
   object-fit: fill;
   pointer-events: none;
 }
-
 .card-icon {
   position: absolute;
   left: 20px; top: 50%;
   transform: translateY(-50%);
-  height: 70%; width: auto;
+  height: 70%;
+  width: auto;
+  pointer-events: none;
+  object-fit: contain;
+}
+.card-icon-car {
+  position: absolute;
+  left: 20px; top: 50%;
+  transform: translateY(-50%);
+  height: 92%;
+  width: auto;
   pointer-events: none;
   object-fit: contain;
 }
@@ -240,7 +225,8 @@ body {
   position: absolute;
   left: 20px; top: 50%;
   transform: translateY(-50%);
-  height: 85%; width: auto;
+  height: 118%;
+  width: auto;
   pointer-events: none;
   object-fit: contain;
 }
@@ -248,11 +234,11 @@ body {
   position: absolute;
   left: 10px; top: 50%;
   transform: translateY(-50%);
-  height: 60%; width: auto;
+  height: 65%;
+  width: auto;
   pointer-events: none;
   object-fit: contain;
 }
-
 .card-value {
   position: absolute;
   right: 8px; top: 50%;
@@ -277,27 +263,22 @@ body {
 }
 .card-value-tray {
   position: absolute;
-  right: 4px; top: 50%;
+  right: 6px; top: 50%;
   transform: translateY(-50%);
   color: white;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 11px;
   pointer-events: none;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
 }
-
 .card.dragging { opacity: 0.35; }
 
 .middle-wrapper {
   position: relative;
   display: inline-block;
-  padding-top: 0;
 }
-.middle-img {
-  display: block;
-  pointer-events: none;
-}
+.middle-img { display: block; pointer-events: none; }
 .middle-value {
   position: absolute;
   bottom: 22%; left: 45%;
@@ -310,68 +291,57 @@ body {
   white-space: nowrap;
 }
 
-/* ── EXPORT OVERLAY ── */
 #export-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(245,242,236,0.88);
   z-index: 9999;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   gap: 12px;
-  color: white;
+  color: #2d3a2d;
   font-size: 16px;
 }
-#export-overlay.visible {
-  display: flex;
-}
+#export-overlay.visible { display: flex; }
 .spinner {
   width: 40px; height: 40px;
-  border: 3px solid rgba(255,255,255,0.2);
-  border-top-color: #4CAF50;
+  border: 3px solid #c8bfa8;
+  border-top-color: #5a7a5a;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
-<!-- html2canvas from CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-<!-- TOP TOOLBAR -->
-<div class="toolbar">
+<div class="toolbar" id="toolbar">
   <span class="toolbar-label">Oldal:</span>
   <select id="selector" onchange="onPageChange(this.value)"></select>
   <div class="toolbar-spacer"></div>
   <button class="export-btn png" onclick="exportPNG()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Exportálás PNG
+    Kép mentése
   </button>
 </div>
 
-<!-- MAIN LAYOUT -->
-<div class="main-layout">
-
-  <!-- LEFT SIDEBAR: bal tároló -->
+<div class="main-layout" id="main-layout">
   <div class="sidebar">
     <div class="sidebar-title">Bal tároló</div>
     <div class="tray" id="tray-left"></div>
   </div>
 
-  <!-- INFOGRAPHIC CENTER -->
   <div class="infographic-wrapper">
     <div id="export-target">
       <img class="bg-img" id="bg-img" src="cards/empty_template.png" crossorigin="anonymous"/>
-
       <div class="overlay">
-        <!-- dragdrop-area: position with top/left % to match infographic -->
         <div class="dragdrop-area" id="dragdrop-area">
           <div class="panel panel-side">
-            <div class="panel-slots" id="left" style="width:200px; height:175px;"></div>
+            <div class="panel-slots" id="left" style="width:200px;"></div>
           </div>
           <div class="panel">
             <div class="middle-wrapper">
@@ -380,133 +350,102 @@ body {
             </div>
           </div>
           <div class="panel panel-side">
-            <div class="panel-slots" id="right" style="width:180px; height:175px;"></div>
+            <div class="panel-slots" id="right" style="width:180px;"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT SIDEBAR: jobb tároló -->
   <div class="sidebar">
     <div class="sidebar-title">Jobb tároló</div>
     <div class="tray" id="tray-right"></div>
   </div>
-
 </div>
 
-<!-- EXPORT LOADING OVERLAY -->
 <div id="export-overlay">
   <div class="spinner"></div>
   <span id="export-msg">Exportálás folyamatban...</span>
 </div>
 
 <script>
-// ─── DATA ───────────────────────────────────────────────────────────────────
 const ALL_STATS_RAW = '{{ALL_STATS}}';
 let allStats = {};
 let currentPage = '';
-
 try {
   allStats = JSON.parse(ALL_STATS_RAW);
   currentPage = Object.keys(allStats)[0];
 } catch(e) {}
 
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
-// ── A kártyák fix pixelméretei (BASE_SCALE = 0.57 az eredeti képméretekhez képest)
-// Ezeket NEM kell dinamikusan változtatni – a CSS transform:scale() intéz el mindent.
 const BASE_SCALE = 0.57;
-
 const DIMS = {
   bal: {
-    tarolo: { w: 90, h: 30 },
-    fent:         { w: Math.round(320 * BASE_SCALE), h: Math.round(97  * BASE_SCALE) },
-    kozep:        { w: Math.round(320 * BASE_SCALE), h: Math.round(97  * BASE_SCALE) },
-    lent:         { w: Math.round(353 * BASE_SCALE), h: Math.round(104 * BASE_SCALE) },
-    lent_egyedul: { w: Math.round(353 * BASE_SCALE), h: Math.round(104 * BASE_SCALE) },
+    tarolo:       { w: 130, h: 50 },
+    fent:         { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
+    kozep:        { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
+    lent:         { w: Math.round(353*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
+    lent_egyedul: { w: Math.round(353*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
   },
   jobb: {
-    tarolo: { w: 90, h: 30 },
-    fent:         { w: Math.round(320 * BASE_SCALE), h: Math.round(97  * BASE_SCALE) },
-    kozep:        { w: Math.round(320 * BASE_SCALE), h: Math.round(97  * BASE_SCALE) },
-    lent:         { w: Math.round(320 * BASE_SCALE), h: Math.round(104 * BASE_SCALE) },
-    lent_egyedul: { w: Math.round(320 * BASE_SCALE), h: Math.round(104 * BASE_SCALE) },
+    tarolo:       { w: 130, h: 50 },
+    fent:         { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
+    kozep:        { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
+    lent:         { w: Math.round(320*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
+    lent_egyedul: { w: Math.round(320*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
   }
 };
-const PANEL_H = Math.round(308 * BASE_SCALE);
-
-// ── Az infografika referencia szélessége: ennél a szélességnél néznek ki jól
-// a kártyák eredeti méretükön (scale=1). Ha az infografika ennél kisebb/nagyobb,
-// a CSS transform:scale() arányosan zsugorítja/nagyítja az EGÉSZ dragdrop-area-t.
-// Csak ezt az egy számot kell belőni ha az arány nem stimmel.
 const REF_WIDTH = 800;
 
-// ── CSS scale frissítése – a kártyák/ikonok/szövegek mind együtt skálázódnak
 function updateDragdropScale() {
   const infEl = document.getElementById('export-target');
   const area  = document.getElementById('dragdrop-area');
   if (!infEl || !area) return;
-  const scale = infEl.offsetWidth / REF_WIDTH;
-  area.style.transform = `scale(${scale})`;
+  area.style.transform = `scale(${infEl.offsetWidth / REF_WIDTH})`;
+}
+
+function notifyHeight() {
+  const toolbar    = document.getElementById('toolbar');
+  const mainLayout = document.getElementById('main-layout');
+  if (!toolbar || !mainLayout) return;
+  const total = Math.ceil(
+    toolbar.getBoundingClientRect().height +
+    mainLayout.getBoundingClientRect().height +
+    16*2 + 12*2
+  ) + 8;
+  window.parent.postMessage({ type: 'streamlit:setFrameHeight', height: total }, '*');
 }
 
 const IMGS = {
-  bal: {
-    tarolo: 'cards/sima_tarolo_bal.png',
-    fent: 'cards/sima_fent_bal.png',
-    kozep: 'cards/sima_kozep_bal.png',
-    lent: 'cards/sima_lent_bal.png',
-    lent_egyedul: 'cards/sima_lent_egyedul_bal.png',
-  },
-  jobb: {
-    tarolo: 'cards/sima_tarolo_jobb.png',
-    fent: 'cards/sima_fent_jobb.png',
-    kozep: 'cards/sima_kozep_jobb.png',
-    lent: 'cards/sima_lent_jobb.png',
-    lent_egyedul: 'cards/sima_lent_egyedul_jobb.png',
-  },
-  ora: {
-    egyedul: 'cards/ora_egyedul.png',
-    bal: 'cards/ora_bal.png',
-    jobb: 'cards/ora_jobb.png',
-    mindketto: 'cards/ora_mindketto.png',
-  }
+  bal:  { tarolo:'cards/sima_tarolo_bal.png', fent:'cards/sima_fent_bal.png', kozep:'cards/sima_kozep_bal.png', lent:'cards/sima_lent_bal.png', lent_egyedul:'cards/sima_lent_egyedul_bal.png' },
+  jobb: { tarolo:'cards/sima_tarolo_jobb.png', fent:'cards/sima_fent_jobb.png', kozep:'cards/sima_kozep_jobb.png', lent:'cards/sima_lent_jobb.png', lent_egyedul:'cards/sima_lent_egyedul_jobb.png' },
+  ora:  { egyedul:'cards/ora_egyedul.png', bal:'cards/ora_bal.png', jobb:'cards/ora_jobb.png', mindketto:'cards/ora_mindketto.png' }
 };
 
 const CARDS = {
-  kg_co2:   { side: 'left',  icon: 'cards/kg.png',        valueKey: 'kg_co2' },
-  wash:     { side: 'left',  icon: 'cards/washing.png',   valueKey: 'wash' },
-  bp_paris: { side: 'left',  icon: 'cards/car.png',       valueKey: 'bp_paris_trips' },
-  kg_saved: { side: 'right', icon: 'cards/kg.png',        valueKey: 'kg_saved' },
-  kwh:      { side: 'right', icon: 'cards/light.png',     valueKey: 'kwh' },
-  house:    { side: 'right', icon: 'cards/household.png', valueKey: 'house' },
+  kg_co2:   { side:'left',  icon:'cards/kg.png',        valueKey:'kg_co2' },
+  wash:     { side:'left',  icon:'cards/washing.png',   valueKey:'wash' },
+  bp_paris: { side:'left',  icon:'cards/car.png',       valueKey:'bp_paris_trips' },
+  kg_saved: { side:'right', icon:'cards/kg.png',        valueKey:'kg_saved' },
+  kwh:      { side:'right', icon:'cards/light.png',     valueKey:'kwh' },
+  house:    { side:'right', icon:'cards/household.png', valueKey:'house' },
 };
 
-let panelState = {
-  trayLeft:  ['kg_co2', 'wash', 'bp_paris'],
-  trayRight: ['kg_saved', 'kwh', 'house'],
-  left:  [],
-  right: [],
-};
-
+let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
 let dragged = null;
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
   return allStats[currentPage] ? allStats[currentPage][key] : '';
 }
 
 function getState(panelId, idx, total) {
-  if (total === 1) return 'lent_egyedul';
-  if (idx === 0)   return 'lent';
-  if (idx === total - 1) return 'fent';
+  if (total===1) return 'lent_egyedul';
+  if (idx===0)   return 'lent';
+  if (idx===total-1) return 'fent';
   return 'kozep';
 }
 
-function getSide(panelId) {
-  return panelId === 'left' ? 'bal' : 'jobb';
-}
+function getSide(panelId) { return panelId==='left' ? 'bal' : 'jobb'; }
 
 function getFrom(id) {
   if (panelState.trayLeft.includes(id))  return 'trayLeft';
@@ -515,49 +454,33 @@ function getFrom(id) {
   if (panelState.right.includes(id))     return 'right';
 }
 
-function removeFromState(id, from) {
-  panelState[from] = panelState[from].filter(c => c !== id);
-}
+function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c!==id); }
 
-// ─── PAGE SELECTOR ───────────────────────────────────────────────────────────
-function onPageChange(page) {
-  currentPage = page;
-  updateValues();
-}
+function onPageChange(page) { currentPage = page; updateValues(); }
 
 function buildSelector() {
   const el = document.getElementById('selector');
   el.innerHTML = '';
   Object.keys(allStats).forEach(page => {
     const opt = document.createElement('option');
-    opt.value = page;
-    opt.textContent = page;
-    if (page === currentPage) opt.selected = true;
+    opt.value = page; opt.textContent = page;
+    if (page===currentPage) opt.selected = true;
     el.appendChild(opt);
   });
 }
 
-// ─── VALUE UPDATE ─────────────────────────────────────────────────────────────
 function updateValues() {
-  document.querySelectorAll('[data-card-id]').forEach(el => {
-    el.textContent = getValue(el.dataset.cardId);
-  });
-  document.getElementById('middle-value').textContent =
-    allStats[currentPage]?.red_pct || '';
+  document.querySelectorAll('[data-card-id]').forEach(el => { el.textContent = getValue(el.dataset.cardId); });
+  document.getElementById('middle-value').textContent = allStats[currentPage]?.red_pct || '';
 }
 
-// ─── MIDDLE ORA IMAGE ────────────────────────────────────────────────────────
 function updateMiddle() {
-  const hasLeft  = panelState.left.length > 0;
-  const hasRight = panelState.right.length > 0;
+  const hasL = panelState.left.length>0, hasR = panelState.right.length>0;
   let key = 'egyedul';
-  if (hasLeft && hasRight) key = 'mindketto';
-  else if (hasLeft)        key = 'bal';
-  else if (hasRight)       key = 'jobb';
+  if (hasL && hasR) key='mindketto'; else if (hasL) key='bal'; else if (hasR) key='jobb';
   document.getElementById('middle').src = IMGS.ora[key];
 }
 
-// ─── RENDER ──────────────────────────────────────────────────────────────────
 function render() {
   renderTray('tray-left',  panelState.trayLeft,  'left');
   renderTray('tray-right', panelState.trayRight, 'right');
@@ -566,38 +489,32 @@ function render() {
   updateMiddle();
   updateValues();
   updateDragdropScale();
+  setTimeout(notifyHeight, 150);
 }
 
 function renderTray(elId, cards, side) {
   const el = document.getElementById(elId);
   el.innerHTML = '';
-
-  [0, 1, 2].forEach(i => {
+  [0,1,2].forEach(i => {
     const slot = document.createElement('div');
     slot.className = 'tray-slot' + (cards[i] ? ' has-card' : '');
-
     if (cards[i]) {
       slot.appendChild(makeCard(cards[i], 'tray'));
-    } else {
-      slot.style.height = '34px';
     }
     el.appendChild(slot);
   });
-
-  el.ondragover = e => { e.preventDefault(); el.classList.add('dragover'); };
+  el.ondragover  = e => { e.preventDefault(); el.classList.add('dragover'); };
   el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
-    e.preventDefault();
-    el.classList.remove('dragover');
+    e.preventDefault(); el.classList.remove('dragover');
     if (!dragged) return;
     if (CARDS[dragged.id].side !== side) return;
-    const trayKey = `tray${side === 'left' ? 'Left' : 'Right'}`;
+    const trayKey = `tray${side==='left'?'Left':'Right'}`;
     if (panelState[trayKey].includes(dragged.id)) return;
     if (panelState[trayKey].length >= 3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[trayKey].push(dragged.id);
-    dragged = null;
-    render();
+    dragged = null; render();
   };
 }
 
@@ -607,16 +524,16 @@ function renderPanel(panelId, cards) {
   const side  = getSide(panelId);
   const total = cards.length;
 
-  const filledH = cards.reduce((sum, id, i) => {
-    return sum + DIMS[side][getState(panelId, i, total)].h;
-  }, 0);
-  const emptySlots = 3 - total;
-  const emptyH = emptySlots > 0 ? Math.floor((PANEL_H - filledH) / emptySlots) : 0;
+  // Panel magassága = 3 kártya tényleges összmagassága, kerekítési hiba nélkül
+  const fullH = DIMS[side].lent.h + DIMS[side].kozep.h + DIMS[side].fent.h;
+  el.style.height = `${fullH}px`;
+
+  // Üres slotok magassága: az adott pozíció kártyamagassága (i=0→lent, i=1→kozep, i=2→fent)
+  const emptyHeights = [DIMS[side].lent.h, DIMS[side].kozep.h, DIMS[side].fent.h];
 
   for (let i = 0; i < 3; i++) {
     const slot = document.createElement('div');
     slot.className = 'slot';
-
     if (cards[i]) {
       const st  = getState(panelId, i, total);
       const dim = DIMS[side][st];
@@ -625,35 +542,27 @@ function renderPanel(panelId, cards) {
       slot.appendChild(makeCard(cards[i], panelId, i, total));
     } else {
       slot.classList.add('empty-slot');
-      slot.style.width  = `${DIMS[side].fent.w}px`;
-      slot.style.height = `${emptyH}px`;
+      slot.style.width  = `${DIMS[side].fent.w}px`;  // egységes szélesség, nem lóg ki
+      slot.style.height = `${emptyHeights[i]}px`;      // pozíció szerinti magasság
     }
     slot.ondragover  = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
     slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
     slot.ondrop = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      slot.classList.remove('slot-dragover');
+      e.preventDefault(); e.stopPropagation(); slot.classList.remove('slot-dragover');
       if (!dragged) return;
       if (CARDS[dragged.id].side !== panelId) return;
-
       const fromPanel = dragged.from;
-      if (fromPanel === panelId) {
-        const sourceIdx = panelState[panelId].indexOf(dragged.id);
-        if (sourceIdx === i) return;
-        const newCards = [...panelState[panelId]];
-        newCards.splice(sourceIdx, 1);
-        newCards.splice(i, 0, dragged.id);
-        panelState[panelId] = newCards;
+      if (fromPanel===panelId) {
+        const src=[...panelState[panelId]], si=src.indexOf(dragged.id);
+        if (si===i) return;
+        src.splice(si,1); src.splice(i,0,dragged.id); panelState[panelId]=src;
       } else {
-        if (panelState[panelId].length >= 3) return;
+        if (panelState[panelId].length>=3) return;
         removeFromState(dragged.id, fromPanel);
-        panelState[panelId].splice(i, 0, dragged.id);
+        panelState[panelId].splice(i,0,dragged.id);
       }
-      dragged = null;
-      render();
+      dragged=null; render();
     };
-
     el.appendChild(slot);
   }
 
@@ -661,79 +570,50 @@ function renderPanel(panelId, cards) {
   el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
     e.preventDefault();
-    if (!dragged) return;
-    if (dragged.from === panelId) return;
-    if (CARDS[dragged.id].side !== panelId) return;
-    if (panelState[panelId].length >= 3) return;
+    if (!dragged||dragged.from===panelId) return;
+    if (CARDS[dragged.id].side!==panelId) return;
+    if (panelState[panelId].length>=3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[panelId].push(dragged.id);
-    dragged = null;
-    render();
+    dragged=null; render();
   };
 }
 
 function makeCard(id, context, idx, total) {
   const card = document.createElement('div');
-  card.className = 'card';
-  card.draggable = true;
-  const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
-
+  card.className = 'card'; card.draggable = true;
+  const side = CARDS[id].side==='left' ? 'bal' : 'jobb';
   const bg = document.createElement('img');
-  bg.className = 'card-bg';
-  bg.crossOrigin = 'anonymous';
+  bg.className='card-bg'; bg.crossOrigin='anonymous';
 
-  if (context === 'tray') {
-    card.style.width  = '90px';
-    card.style.height = '30px';
-    bg.src = IMGS[side].tarolo;
-    card.appendChild(bg);
-
-    const icon = document.createElement('img');
-    icon.className = 'card-icon-tray';
-    icon.src = CARDS[id].icon;
-    icon.crossOrigin = 'anonymous';
+  if (context==='tray') {
+    card.style.width='130px'; card.style.height='50px';
+    bg.src=IMGS[side].tarolo; card.appendChild(bg);
+    const icon=document.createElement('img');
+    icon.className='card-icon-tray'; icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
-
-    const value = document.createElement('span');
-    value.className = 'card-value-tray';
-    value.dataset.cardId = id;
-    value.textContent = getValue(id);
-    card.appendChild(value);
+    const val=document.createElement('span');
+    val.className='card-value-tray'; val.dataset.cardId=id; val.textContent=getValue(id);
+    card.appendChild(val);
   } else {
-    const st  = getState(context, idx, total);
-    const dim = DIMS[side][st];
-    card.style.width  = `${dim.w}px`;
-    card.style.height = `${dim.h}px`;
-    bg.src = IMGS[side][st];
-    card.appendChild(bg);
-
-    const icon = document.createElement('img');
-    icon.className = id === 'house' ? 'card-icon-house' : 'card-icon';
-    icon.src = CARDS[id].icon;
-    icon.crossOrigin = 'anonymous';
+    const st=getState(context,idx,total), dim=DIMS[side][st];
+    card.style.width=`${dim.w}px`; card.style.height=`${dim.h}px`;
+    bg.src=IMGS[side][st]; card.appendChild(bg);
+    const icon=document.createElement('img');
+    icon.className = id==='house' ? 'card-icon-house' : id==='bp_paris' ? 'card-icon-car' : 'card-icon';
+    icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
-
-    const value = document.createElement('span');
-    value.className = (context === 'left' && idx === 0) ? 'card-value-indent' : 'card-value';
-    value.dataset.cardId = id;
-    value.textContent = getValue(id);
-    card.appendChild(value);
+    const val=document.createElement('span');
+    val.className=(context==='left'&&idx===0)?'card-value-indent':'card-value';
+    val.dataset.cardId=id; val.textContent=getValue(id);
+    card.appendChild(val);
   }
 
-  card.ondragstart = e => {
-    e.stopPropagation();
-    dragged = { id, from: getFrom(id) };
-    setTimeout(() => card.classList.add('dragging'), 0);
-  };
-  card.ondragend = () => {
-    card.classList.remove('dragging');
-    if (dragged) { dragged = null; render(); }
-  };
-
+  card.ondragstart = e => { e.stopPropagation(); dragged={id, from:getFrom(id)}; setTimeout(()=>card.classList.add('dragging'),0); };
+  card.ondragend   = () => { card.classList.remove('dragging'); if (dragged){dragged=null; render();} };
   return card;
 }
 
-// ─── EXPORT ──────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
   document.getElementById('export-msg').textContent = msg;
   document.getElementById('export-overlay').classList.add('visible');
@@ -742,48 +622,33 @@ function hideExportOverlay() {
   document.getElementById('export-overlay').classList.remove('visible');
 }
 
-async function captureInfographic() {
-  const target = document.getElementById('export-target');
-  return await html2canvas(target, {
-    useCORS: true,
-    allowTaint: false,
-    scale: 2,
-    backgroundColor: null,
-    logging: false,
-  });
-}
-
 async function exportPNG() {
-  showExportOverlay('PNG exportálás...');
+  showExportOverlay('Kép mentése folyamatban...');
+  const emptySlots = document.querySelectorAll('.empty-slot');
+  emptySlots.forEach(s => s.classList.add('export-hide'));
   try {
-    const canvas = await captureInfographic();
+    const canvas = await html2canvas(document.getElementById('export-target'), {
+      useCORS:true, allowTaint:false, scale:4, backgroundColor:null, logging:false
+    });
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
     const link = document.createElement('a');
-    link.download = `infografika_${currentPage || 'export'}.png`;
+    link.download = `infografika_${ts}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-  } catch(e) {
-    alert('Export hiba: ' + e.message);
-  } finally {
+  } catch(e) { alert('Export hiba: '+e.message); }
+  finally {
+    emptySlots.forEach(s => s.classList.remove('export-hide'));
     hideExportOverlay();
   }
 }
 
-// ─── INIT ────────────────────────────────────────────────────────────────────
 buildSelector();
-
-// Várunk amíg a háttérkép betölt, hogy a valós méretek alapján skálázzunk
 const bgImg = document.getElementById('bg-img');
-if (bgImg.complete) {
-  render();
-} else {
-  bgImg.onload = () => render();
-}
+if (bgImg.complete) render(); else bgImg.onload = () => render();
 
-// ResizeObserver: ha az infografika szélessége változik → csak a scale-t frissítjük
-const resizeObserver = new ResizeObserver(() => {
-  updateDragdropScale();
-});
-resizeObserver.observe(document.getElementById('export-target'));
+const ro = new ResizeObserver(() => { updateDragdropScale(); setTimeout(notifyHeight, 150); });
+ro.observe(document.getElementById('export-target'));
 </script>
 </body>
 </html>
