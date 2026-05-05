@@ -379,6 +379,14 @@ body {
           <div class="panel">
             <div class="middle-wrapper">
               <img id="middle" class="middle-img" style="height:187px; width:194px;" src="cards/ora_egyedul.png" crossorigin="anonymous"/>
+              <svg id="needle-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 194 187">
+                <g id="needle-line" style="transform-origin: 85.5px 84px; transform: rotate(-90deg);">
+                  <!-- Mutató: hegyétől a forgáspontig -->
+                  <path d="M85.5,34 L88.5,84 L82.5,84 Z" fill="#1a1a1a"/>
+                  <!-- Fekete kör a forgáspontnál -->
+                  <circle cx="85.5" cy="84" r="5.5" fill="#1a1a1a"/>
+                </g>
+              </svg>
               <div class="middle-text">
                 <span class="middle-value" id="middle-value"></span>
                 <span class="middle-label" id="middle-label"></span>
@@ -531,8 +539,17 @@ function updateValues() {
   document.querySelectorAll('[data-label-id]').forEach(el => {
     el.textContent = getLabel(el.dataset.labelId);
   });
-  document.getElementById('middle-value').textContent = allStats[currentPage]?.red_pct || '';
+  const redPctStr = allStats[currentPage]?.red_pct || '0%';
+  document.getElementById('middle-value').textContent = redPctStr;
   document.getElementById('middle-label').textContent = labels['red_pct']?.description || '';
+
+  // Mutató forgatása
+  const redPct = parseFloat(redPctStr);
+  const angle = (redPct / 100) * 180 - 90;
+  const needle = document.getElementById('needle-line');
+  if (needle) {
+    needle.style.transform = `rotate(${angle}deg)`;
+  }
 }
 
 function updateMiddle() {
