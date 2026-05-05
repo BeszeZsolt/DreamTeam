@@ -348,6 +348,86 @@ if "calc_dist_km" in st.session_state:
         f"Az összes vizsgált weboldal carbon kibocsátása összesen "
         f"**{trips:,.0f}×** megtételének felel meg."
     )
-
+    
+# ── AI összefoglaló ───────────────────────────────────────────────────────────
+ 
+st.divider()
+st.subheader("🤖 AI összefoglaló generátor")
+st.caption(
+    "Ingyenes Groq API (Llama 3.3 70B) – regisztrálj hitelkártya nélkül: "
+    "[console.groq.com](https://console.groq.com) → API Keys → Create API Key"
+)
+ 
+with st.expander("⚙️ Beállítások", expanded=st.session_state["groq_api_key"] == ""):
+    groq_key_input = st.text_input(
+        "Groq API kulcs",
+        value=st.session_state["groq_api_key"],
+        type="password",
+        placeholder="gsk_...",
+        help="A kulcsod biztonságosan csak ebben a munkamenetben tárolódik.",
+    )
+    if groq_key_input != st.session_state["groq_api_key"]:
+        st.session_state["groq_api_key"] = groq_key_input
+        st.session_state["ai_summary"]   = None
+ 
+ai_col1, ai_col2, ai_col3 = st.columns([2, 2, 1])
+ 
+with ai_col1:
+    ai_pagetype = st.selectbox(
+        "Oldaltípus / nézet",
+        ["Összesítő"] + sorted(data["by_pagetype"].keys()),
+        key="ai_pagetype_sel",
+    )
+ 
+with ai_col2:
+    ai_lang_label = st.selectbox(
+        "Összefoglaló nyelve",
+        list(AI_LANGUAGES.keys()),
+        key="ai_lang_sel",
+    )
+ 
+with ai_col3:
+    st.write("")
+    st.write("")
+    generate_btn = st.button("✨ Generálás", use_container_width=True,
+                              disabled=(st.session_state["groq_api_key"] == ""))
+ 
+if generate_btn:
+    if ai_pagetype == "Összesítő":
+        sel_stats = data["summary"]
+    else:
+        sel_stats = data["by_pagetype"][ai_pagetype]
+ 
+    sel_lang = AI_LANGUAGES[ai_lang_label]
+ 
+    with st.spinner("🧠 Az AI dolgozik…"):
+        summary_text = generate_ai_summary(
+            stats      = sel_stats,
+            pagetype   = ai_pagetype,
+            num_sites  = df["website"].nunique(),
+            num_rows   = len(df),
+            industries = df["industry"].dropna().tolist(),
+            lang       = sel_lang,
+            api_key    = st.session_state["groq_api_key"],
+        )
+    st.session_state["ai_summary"] = summary_text
+    st.session_state["ai_summary_meta"] = {
+        "pagetype": ai_pagetype,
+        "lang":     ai_lang_label,
+    }
+ 
+if st.session_state.get("ai_summary"):
+    meta = st.session_state.get("ai_summary_meta", {})
+    st.info(
+        f"**Összefoglaló** · {meta.get('pagetype','?')} · {meta.get('lang','?')}\n\n"
+        + st.session_state["ai_summary"]
+    )
+    st.download_button(
+        label     = "⬇️ Letöltés (.txt)",
+        data      = st.session_state["ai_summary"],
+        file_name = f"carbon_crane_summary_{meta.get('pagetype','osszesito')}.txt",
+        mime      = "text/plain",
+    )
+ 
 # ── Fordítás 15 nyelvre ───────────────────────────────────────────────────────
 
