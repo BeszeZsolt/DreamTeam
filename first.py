@@ -1,14 +1,10 @@
 import pandas as pd
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFont
-import json
+import json as json_lib
 import streamlit.components.v1 as components
 import base64
 import requests
 import time
-
-# Ez a fordításhoz kell
-# from deep_translator import GoogleTranslator
 
 from geopy.geocoders import Nominatim
 
@@ -21,20 +17,18 @@ CO2_PER_WASH  = 0.236615995  # 1 mosás CO2e-je [kg]
 CO2_PER_KM    = 0.215118375  # 1 km autózás CO2e-je [kg]
 CO2_PER_KWH   = 0.236150771  # 1 kWh áram CO2-je [kg]
 KWH_PER_HOUSE = 2500         # 1 háztartás éves energiafogyasztása [kWh]
-TOTAL_PV      = 120_000_000  # összes page visit (fixált)
 BP_PARIS_KM   = 1485         # Budapest → Párizs távolság [km] (alapértelmezett)
 
 COL_EM_ALL   = "BE - Carbon Emission - all subpages "
 COL_EM_PAGE  = "BE - Carbon Emission - page"
 COL_RED_PAGE = "BE - Reduced Carbon Emission"
-COL_RED      = COL_RED_PAGE  # alias
 COL_RED_ALL  = "BE - Reduced Carbon Emission - all subpages"
 
 REQUIRED_COLUMNS = [
     "industry", "website", "pageType", "have all subpages", "url",
     COL_EM_PAGE, COL_EM_ALL,
     "BE - Reduction % - page", "Reduction % - image",
-    COL_RED, "BE - Reduced Carbon Emission - all subpages",
+    COL_RED_PAGE, "BE - Reduced Carbon Emission - all subpages",
     "BE - Reduction % - all subpages", "Rank Reduction % - page",
     "Rank Reduced Carbon Emission", "Rank Reduction % - all subpages",
     "Rank Reduced Carbon Emission -  all subpages",
@@ -45,7 +39,7 @@ REQUIRED_COLUMNS = [
 if "ref_km" not in st.session_state:
     st.session_state["ref_km"] = BP_PARIS_KM
 if "ref_label" not in st.session_state:
-    st.session_state["ref_label"] = "Budapest → Párizs"
+    st.session_state["ref_label"] = "Budapest → Paris"
 
 # ── Drag&drop ─────────────────────────────────────────────────────────────────
 
@@ -55,10 +49,10 @@ def img_to_base64(path):
 
 # ── Számítások ────────────────────────────────────────────────────────────────
 
-def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str, ref_km: float) -> dict:
+def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str, ref_km: float, total_pv: int) -> dict:
     """Emission statisztikák + csökkentési potenciál egy adott oszloppárra."""
     em_avg   = rows[col_em].mean()
-    kg_co2   = em_avg * TOTAL_PV / 1000
+    kg_co2   = em_avg * total_pv / 1000
     per_site = rows.groupby("website").agg(max_em=(col_em, "max"), max_red=(col_red, "max"))
     red_pct  = per_site["max_red"].sum() / per_site["max_em"].sum()
     kg_saved = kg_co2 * red_pct
@@ -69,7 +63,7 @@ def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str, ref_km: float) -> 
         "em_min":         rows[col_em].min(),
         "kg_co2":         kg_co2,
         "wash":           kg_co2 / CO2_PER_WASH,
-        "bp_paris_trips": kg_co2 / CO2_PER_KM / ref_km,  # dinamikus referencia
+        "bp_paris_km_raw": kg_co2 / CO2_PER_KM,
         "red_pct":        red_pct,
         "kg_saved":       kg_saved,
         "kwh":            kwh,
@@ -77,64 +71,60 @@ def calc_stats(rows: pd.DataFrame, col_em: str, col_red: str, ref_km: float) -> 
     }
 
 
-def calc_all(df: pd.DataFrame, ref_km: float) -> dict:
+def calc_all(df: pd.DataFrame, ref_km: float, total_pv: int) -> dict:
     """Összesítő + oldaltípusonkénti max/avg/min számítások."""
     return {
-        "summary":     calc_stats(df, COL_EM_ALL, COL_RED_ALL, ref_km),
-        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE, ref_km) for pt, g in df.groupby("pageType")},
+        "summary":     calc_stats(df, COL_EM_ALL, COL_RED_ALL, ref_km, total_pv),
+        "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE, ref_km, total_pv) for pt, g in df.groupby("pageType")},
     }
-
-# ── Infografika generálás ─────────────────────────────────────────────────────
-
-def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infografika_template.png", layout_path: str = "layout.json") -> Image.Image:
-    with open(layout_path) as f:
-        layout = json.load(f)
-
-    img  = Image.open(template_path).convert("RGBA")
-    draw = ImageDraw.Draw(img)
-
-    fields = {
-        "em_max":         f"{stats['em_max']:.2f}",
-        "em_avg":         f"{stats['em_avg']:.2f}",
-        "em_min":         f"{stats['em_min']:.2f}",
-        "kg_co2":         f"{stats['kg_co2']:,.0f}",
-        "wash":           f"{stats['wash']:,.0f}",
-        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
-        "red_pct":        f"{stats['red_pct']*100:.1f}%",
-        "kg_saved":       f"{stats['kg_saved']:,.0f}",
-        "kwh":            f"{stats['kwh']:,.0f}",
-        "house":          f"{stats['house']:,.0f}",
-    }
-
-    font = ImageFont.load_default(size=60)
-
-    for key, text in fields.items():
-        box = layout[key]
-        x, y, w, h = box["x"], box["y"], box["w"], box["h"]
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw   = bbox[2] - bbox[0]
-        th   = bbox[3] - bbox[1]
-        tx   = x + (w - tw) // 2
-        ty   = y + (h - th) // 2
-        draw.text((tx, ty), text, font=font, fill="white")
-
-    return img
 
 # ── Geocoder segédfüggvények ──────────────────────────────────────────────────
 
 @st.cache_data(show_spinner=False)
 def geocode_location(place: str):
     geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
-    for attempt in range(3):  # max 3 próbálkozás
+    for attempt in range(3):
         try:
-            time.sleep(1)  # Nominatim megköveteli az 1mp várakozást
+            time.sleep(1)
             result = geolocator.geocode(place)
             return result
         except Exception as e:
             if attempt < 2:
-                time.sleep(2 ** attempt)  # 1mp, 2mp várakozás újrapróbálás előtt
+                time.sleep(2 ** attempt)
             else:
                 raise e
+
+def extract_city(location) -> str:
+    """Városnév kinyerése a Nominatim geocoder eredményéből."""
+    raw = location.raw.get("address", {})
+    return (
+        raw.get("city") or
+        raw.get("town") or
+        raw.get("village") or
+        raw.get("municipality") or
+        location.address.split(",")[0]
+    )
+
+def shorten_label(text: str, max_chars: int = 32) -> str:
+    """Feliratot rövidít ha meghaladja a max karakterszámot."""
+    return text if len(text) <= max_chars else text[:max_chars].rstrip() + "."
+
+def fit_cities(city1: str, city2: str, max_total: int = 22) -> tuple:
+    """Városneveket rövidít ha együtt nem férnének el. Először a hosszabbat rövidíti."""
+    if len(city1) + len(city2) <= max_total:
+        return city1, city2
+    # Hosszabbat rövidítjük először
+    if len(city1) >= len(city2):
+        city1 = city1[:10].rstrip() + "."
+    else:
+        city2 = city2[:10].rstrip() + "."
+    # Ha még mindig nem fér, a másikat is rövidítjük
+    if len(city1) + len(city2) > max_total:
+        if not city1.endswith("."):
+            city1 = city1[:10].rstrip() + "."
+        if not city2.endswith("."):
+            city2 = city2[:10].rstrip() + "."
+    return city1, city2
 
 @st.cache_data(show_spinner=False)
 def get_road_distance(lat1, lon1, lat2, lon2):
@@ -148,7 +138,7 @@ def get_road_distance(lat1, lon1, lat2, lon2):
         resp = requests.get(url, timeout=10)
         data = resp.json()
         if data.get("code") == "Ok":
-            return data["routes"][0]["distance"] / 1000  # méter → km
+            return data["routes"][0]["distance"] / 1000
         return None
     except Exception:
         return None
@@ -183,8 +173,22 @@ if missing:
 df = df.dropna(subset=["website"])
 df["website"] = df["website"].str.strip()
 
-# Mindig az aktuális ref_km-mel számolunk
-data = calc_all(df, st.session_state["ref_km"])
+# ── Page visit szám beállítása ────────────────────────────────────────────────
+
+DEFAULT_PV = 120_000_000
+col_pv, _ = st.columns([1, 3])
+with col_pv:
+    pv_input = st.text_input("Összes page visit", value="120,000,000")
+try:
+    total_pv = int(pv_input.replace(",", "").replace(" ", "").replace(".", ""))
+    if total_pv <= 0:
+        raise ValueError
+except ValueError:
+    st.warning("Érvénytelen page visit szám, az alapértelmezett értéket használjuk (120 000 000).")
+    total_pv = DEFAULT_PV
+
+# Mindig az aktuális ref_km-mel és total_pv-vel számolunk
+data = calc_all(df, st.session_state["ref_km"], total_pv)
 
 st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
 
@@ -209,30 +213,41 @@ card_images = [
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
 
-import json as json_lib
-
-all_stats = {"Összesítő": {
-    "kg_co2":         f"{data['summary']['kg_co2']:,.0f}",
-    "wash":           f"{data['summary']['wash']:,.0f}",
-    "bp_paris_trips": f"{data['summary']['bp_paris_trips']:,.0f}",
-    "kg_saved":       f"{data['summary']['kg_saved']:,.0f}",
-    "kwh":            f"{data['summary']['kwh']:,.0f}",
-    "house":          f"{data['summary']['house']:,.0f}",
-    "red_pct":        f"{data['summary']['red_pct']*100:.1f}%",
-}}
-
-for pt, stats in data["by_pagetype"].items():
-    all_stats[pt] = {
-        "kg_co2":         f"{stats['kg_co2']:,.0f}",
-        "wash":           f"{stats['wash']:,.0f}",
-        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
-        "kg_saved":       f"{stats['kg_saved']:,.0f}",
-        "kwh":            f"{stats['kwh']:,.0f}",
+def fmt(stats: dict, ref_km: float) -> dict:
+    """Formázott értékek összerakása — szám + unit együtt."""
+    bp_km    = stats['bp_paris_km_raw']
+    bp_trips = round(bp_km / ref_km)
+    return {
+        "kg_co2":         f"{stats['kg_co2']:,.0f} KG CO2E",
+        "wash":           f"{stats['wash']:,.0f} DB",
+        "bp_paris_trips": f"{bp_km:,.0f} KM",
+        "bp_paris_trips_count": bp_trips,
+        "kg_saved":       f"{stats['kg_saved']:,.0f} KG CO2E",
+        "kwh":            f"{stats['kwh']:,.0f} KWH",
         "house":          f"{stats['house']:,.0f}",
         "red_pct":        f"{stats['red_pct']*100:.1f}%",
     }
 
+ref_km = st.session_state["ref_km"]
+all_stats = {"Összesítő": fmt(data["summary"], ref_km)}
+for pt, stats in data["by_pagetype"].items():
+    all_stats[pt] = fmt(stats, ref_km)
+
+city1_raw, city2_raw = st.session_state["ref_label"].split(" → ")
+city1_fit, city2_fit = fit_cities(city1_raw, city2_raw)
+
+labels = {
+    "kg_co2":   {"description": ""},
+    "wash":     {"description": shorten_label("NAGYMOSÁS")},
+    "bp_paris": {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
+    "kg_saved": {"description": ""},
+    "kwh":      {"description": ""},
+    "house":    {"description": shorten_label("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA")},
+    "red_pct":  {"description": shorten_label("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL")},
+}
+
 html = html.replace("{{ALL_STATS}}", json_lib.dumps(all_stats, ensure_ascii=False))
+html = html.replace("{{LABELS}}", json_lib.dumps(labels, ensure_ascii=False))
 components.html(html, height=600, scrolling=False)
 
 # ── Számítások megjelenítése ──────────────────────────────────────────────────
@@ -250,19 +265,9 @@ components.html(html, height=600, scrolling=False)
 # else:
 #     st.json(data["by_pagetype"][sel_oldal])
 
-# ── Infografika ───────────────────────────────────────────────────────────────
+# ── Részletes nézet ───────────────────────────────────────────────────────────
 
 # st.divider()
-
-# if st.button("Infografika generálása"):
-#     if sel_oldal == "Összesítő":
-#         stats = data["summary"]
-#     else:
-#         stats = data["by_pagetype"][sel_oldal]
-#     img = generate_infographic(stats)
-#     st.image(img)
-
-# # ── Részletes nézet ───────────────────────────────────────────────────────────
 
 # reszletes = st.toggle("Részletes nézet")
 
@@ -318,8 +323,10 @@ if st.button("Távolság kiszámítása"):
         if dist_km is None:
             st.error("Nem sikerült az útvonalat kiszámítani. Lehet, hogy nincs közúti összeköttetés (pl. különböző kontinensek)?")
         else:
+            city1 = extract_city(g1)
+            city2 = extract_city(g2)
             st.session_state["ref_km"]        = dist_km
-            st.session_state["ref_label"]     = f"{loc1} → {loc2}"
+            st.session_state["ref_label"]     = f"{city1} → {city2}"
             st.session_state["calc_dist_km"]  = dist_km
             st.session_state["calc_address1"] = g1.address
             st.session_state["calc_address2"] = g2.address
@@ -329,9 +336,9 @@ if st.button("Távolság kiszámítása"):
 
 if "calc_dist_km" in st.session_state:
     dist_km = st.session_state["calc_dist_km"]
-    new_data = calc_all(df, dist_km)
+    new_data = calc_all(df, dist_km, total_pv)
     kg_co2_total = new_data["summary"]["kg_co2"]
-    trips        = new_data["summary"]["bp_paris_trips"]
+    trips        = new_data["summary"]["bp_paris_km_raw"] / dist_km
 
     st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km** – ez lett az új referencia útvonal!")
     st.caption(f"({st.session_state['calc_address1']}  →  {st.session_state['calc_address2']})")
@@ -348,6 +355,3 @@ if "calc_dist_km" in st.session_state:
         f"Az összes vizsgált weboldal carbon kibocsátása összesen "
         f"**{trips:,.0f}×** megtételének felel meg."
     )
-
-# ── Fordítás 15 nyelvre ───────────────────────────────────────────────────────
-
