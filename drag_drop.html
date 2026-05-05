@@ -268,10 +268,19 @@ body {
 .card-number {
   color: white;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 15px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
   line-height: 1.1;
+}
+.card-unit {
+  color: white;
+  font-weight: 600;
+  font-size: 9px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  margin-left: 3px;
+  vertical-align: middle;
 }
 .card-label {
   color: #f5f500;
@@ -382,9 +391,9 @@ body {
               <svg id="needle-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 194 187">
                 <g id="needle-line" style="transform-origin: 85.5px 84px; transform: rotate(-90deg);">
                   <!-- Mutató: hegyétől a forgáspontig -->
-                  <path d="M85.5,34 L88.5,84 L82.5,84 Z" fill="#1a1a1a"/>
+                  <path d="M85.5,34 L90.5,84 L80.5,84 Z" fill="#444444"/>
                   <!-- Fekete kör a forgáspontnál -->
-                  <circle cx="85.5" cy="84" r="5.5" fill="#1a1a1a"/>
+                  <circle cx="85.5" cy="84" r="6" fill="#444444"/>
                 </g>
               </svg>
               <div class="middle-text">
@@ -487,7 +496,16 @@ let dragged = null;
 
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
-  return allStats[currentPage] ? allStats[currentPage][key] : '';
+  const val = allStats[currentPage] ? allStats[currentPage][key] : '';
+  if (val && typeof val === 'object') return val.num || '';
+  return val || '';
+}
+
+function getUnit(cardId) {
+  const key = CARDS[cardId].valueKey;
+  const val = allStats[currentPage] ? allStats[currentPage][key] : '';
+  if (val && typeof val === 'object') return val.unit || '';
+  return '';
 }
 
 function getLabel(cardId) {
@@ -686,21 +704,38 @@ function makeCard(id, context, idx, total) {
     icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
 
-    // Szövegblokk: szám + felirat egymás alatt
+    // Szövegblokk: szám+unit egy sorban, felirat alatta
     const textBlock = document.createElement('div');
     textBlock.className = 'card-text' + (context==='left' && idx===0 ? ' indent' : '');
+
+    // Első sor: szám + mértékegység
+    const numRow = document.createElement('div');
+    numRow.style.cssText = 'display:flex;align-items:baseline;gap:3px;';
 
     const numEl = document.createElement('span');
     numEl.className = 'card-number';
     numEl.dataset.cardId = id;
     numEl.textContent = getValue(id);
-    textBlock.appendChild(numEl);
+    numRow.appendChild(numEl);
 
-    const labelEl = document.createElement('span');
-    labelEl.className = 'card-label';
-    labelEl.dataset.labelId = id;
-    labelEl.textContent = getLabel(id);
-    textBlock.appendChild(labelEl);
+    const unit = getUnit(id);
+    if (unit) {
+      const unitEl = document.createElement('span');
+      unitEl.className = 'card-unit';
+      unitEl.textContent = unit;
+      numRow.appendChild(unitEl);
+    }
+    textBlock.appendChild(numRow);
+
+    // Második sor: felirat (csak ha van)
+    const labelText = getLabel(id);
+    if (labelText) {
+      const labelEl = document.createElement('span');
+      labelEl.className = 'card-label';
+      labelEl.dataset.labelId = id;
+      labelEl.textContent = labelText;
+      textBlock.appendChild(labelEl);
+    }
 
     card.appendChild(textBlock);
   }
