@@ -357,7 +357,7 @@ st.caption(
     "[console.groq.com](https://console.groq.com) → API Keys → Create API Key"
 )
  
-with st.expander("⚙️ Beállítások", expanded=st.session_state["groq_api_key"] == ""):
+with st.expander("⚙️ Beállítások", expanded=st.session_state["groq_api_key"] == "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"):
     groq_key_input = st.text_input(
         "Groq API kulcs",
         value=st.session_state["groq_api_key"],
