@@ -8,7 +8,7 @@ import requests
 import time
 
 # Ez a fordításhoz kell
-from deep_translator import GoogleTranslator
+# from deep_translator import GoogleTranslator
 
 from geopy.geocoders import Nominatim
 
@@ -350,100 +350,4 @@ if "calc_dist_km" in st.session_state:
     )
 
 # ── Fordítás 15 nyelvre ───────────────────────────────────────────────────────
-
-LANGUAGES = {
-    "Angol": "en",
-    "Spanyol": "es",
-    "Francia": "fr",
-    "Német": "de",
-    "Kínai (egyszerűsített)": "zh-CN",
-    "Hindi": "hi",
-    "Arab": "ar",
-    "Orosz": "ru",
-    "Portugál": "pt",
-    "Japán": "ja",
-    "Olasz": "it",
-    "Koreai": "ko",
-    "Török": "tr",
-    "Holland": "nl",
-    "Magyar": "hu"
-}
-
-st.divider()
-st.subheader("🎨 Infografika Beállítások")
-
-page_options = ["Összesítő"] + sorted(data["by_pagetype"].keys())
-sel_oldal = st.selectbox("Oldal", page_options)
-
-# Nyelvválasztó a felületen
-selected_language_name = st.selectbox(
-    "Válaszd ki az infografika nyelvét:", 
-    list(LANGUAGES.keys()),
-    index=list(LANGUAGES.values()).index("en") # Alapértelmezett: Angol
-)
-selected_language_code = LANGUAGES[selected_language_name]
-
-# Fordító függvény gyorsítótárazással a hatékony működésért
-@st.cache_data(show_spinner=False)
-def translate_text(text, target_lang):
-    try:
-        translator = GoogleTranslator(source='hu', target=target_lang)
-        return translator.translate(str(text))
-    except Exception as e:
-        return text # Hiba esetén az eredeti szöveg marad
-
-# Infografika generálás gomb
-if st.button("Infografika generálása"):
-    with st.spinner(f"Fordítás és generálás ({selected_language_name})..."):
-        if sel_oldal == "Összesítő":
-            stats = data["summary"]
-        else:
-            stats = data["by_pagetype"][sel_oldal]
-        
-        # Ha a statisztikai számokat szeretnéd szövegesen is megjeleníteni a felületen lefordítva
-        # Itt a lefordított értékek generálódnak
-        translated_stats = {}
-        for key, value in stats.items():
-            if isinstance(value, float):
-                translated_stats[key] = f"{value:,.2f}"
-            else:
-                translated_stats[key] = str(value)
-                
-        # Saját generáló függvényed meghívása
-        img = generate_infographic(stats)
-        st.image(img)
-
-def generate_infographic(stats: dict, template_path: str = "Carbon.Crane_infografika_template.png", layout_path: str = "layout.json") -> Image.Image:
-    with open(layout_path) as f:
-        layout = json.load(f)
-
-    img  = Image.open(template_path).convert("RGBA")
-    draw = ImageDraw.Draw(img)
-
-    fields = {
-        "em_max":         f"{stats['em_max']:.2f}",
-        "em_avg":         f"{stats['em_avg']:.2f}",
-        "em_min":         f"{stats['em_min']:.2f}",
-        "kg_co2":         f"{stats['kg_co2']:,.0f}",
-        "wash":           f"{stats['wash']:,.0f}",
-        "bp_paris_trips": f"{stats['bp_paris_trips']:,.0f}",
-        "red_pct":        f"{stats['red_pct']*100:.1f}%",
-        "kg_saved":       f"{stats['kg_saved']:,.0f}",
-        "kwh":            f"{stats['kwh']:,.0f}",
-        "house":          f"{stats['house']:,.0f}",
-    }
-
-    font = ImageFont.load_default(size=60)
-
-    for key, text in fields.items():
-        box = layout[key]
-        x, y, w, h = box["x"], box["y"], box["w"], box["h"]
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw   = bbox[2] - bbox[0]
-        th   = bbox[3] - bbox[1]
-        tx   = x + (w - tw) // 2
-        ty   = y + (h - th) // 2
-        draw.text((tx, ty), text, font=font, fill="white")
-
-    return img
 
