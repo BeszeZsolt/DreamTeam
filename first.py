@@ -78,6 +78,25 @@ def calc_all(df: pd.DataFrame, ref_km: float, total_pv: int) -> dict:
         "by_pagetype": {pt: calc_stats(g, COL_EM_PAGE, COL_RED_PAGE, ref_km, total_pv) for pt, g in df.groupby("pageType")},
     }
 
+def hu(val: float) -> str:
+    """Szám formázása szóközös ezres elválasztóval."""
+    return f"{round(val):,}".replace(",", " ")
+
+def fmt(stats: dict, ref_km: float) -> dict:
+    """Formázott értékek összerakása — szám és unit külön."""
+    bp_km    = stats['bp_paris_km_raw']
+    bp_trips = round(bp_km / ref_km)
+    return {
+        "kg_co2":               {"num": hu(stats['kg_co2']),  "unit": "KG CO2E"},
+        "wash":                 {"num": hu(stats['wash']),     "unit": "DB"},
+        "bp_paris_trips":       {"num": hu(bp_km),             "unit": "KM"},
+        "bp_paris_trips_count": bp_trips,
+        "kg_saved":             {"num": hu(stats['kg_saved']), "unit": "KG CO2E"},
+        "kwh":                  {"num": hu(stats['kwh']),      "unit": "KWH"},
+        "house":                {"num": hu(stats['house']),    "unit": ""},
+        "red_pct":              f"{stats['red_pct']*100:.1f}%",
+    }
+
 # ── Geocoder segédfüggvények ──────────────────────────────────────────────────
 
 @st.cache_data(show_spinner=False)
@@ -212,21 +231,6 @@ card_images = [
 
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
-
-def fmt(stats: dict, ref_km: float) -> dict:
-    """Formázott értékek összerakása — szám + unit együtt."""
-    bp_km    = stats['bp_paris_km_raw']
-    bp_trips = round(bp_km / ref_km)
-    return {
-        "kg_co2":         f"{stats['kg_co2']:,.0f} KG CO2E",
-        "wash":           f"{stats['wash']:,.0f} DB",
-        "bp_paris_trips": f"{bp_km:,.0f} KM",
-        "bp_paris_trips_count": bp_trips,
-        "kg_saved":       f"{stats['kg_saved']:,.0f} KG CO2E",
-        "kwh":            f"{stats['kwh']:,.0f} KWH",
-        "house":          f"{stats['house']:,.0f}",
-        "red_pct":        f"{stats['red_pct']*100:.1f}%",
-    }
 
 ref_km = st.session_state["ref_km"]
 all_stats = {"Összesítő": fmt(data["summary"], ref_km)}
