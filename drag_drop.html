@@ -239,39 +239,53 @@ body {
   pointer-events: none;
   object-fit: contain;
 }
-.card-value {
-  position: absolute;
-  right: 8px; top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-weight: bold;
-  font-size: 13px;
-  pointer-events: none;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  white-space: nowrap;
-}
-.card-value-indent {
-  position: absolute;
-  right: 28px; top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-weight: bold;
-  font-size: 13px;
-  pointer-events: none;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  white-space: nowrap;
-}
+
+/* Tray szöveg */
 .card-value-tray {
   position: absolute;
   right: 6px; top: 50%;
   transform: translateY(-50%);
   color: white;
   font-weight: bold;
-  font-size: 11px;
+  font-size: 10px;
   pointer-events: none;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
 }
+
+/* Panel kártya szövegblokk */
+.card-text {
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+  gap: 3px;
+}
+.card-text.indent { right: 28px; }
+.card-number {
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+.card-label {
+  color: #f5f500;
+  font-weight: 600;
+  font-size: 8px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  white-space: normal;
+  text-align: right;
+  max-width: 100px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .card.dragging { opacity: 0.35; }
 
 .middle-wrapper {
@@ -279,16 +293,35 @@ body {
   display: inline-block;
 }
 .middle-img { display: block; pointer-events: none; }
-.middle-value {
+.middle-text {
   position: absolute;
-  bottom: 22%; left: 45%;
+  bottom: 18%; left: 45%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  gap: 2px;
+}
+.middle-value {
   color: #f5f500;
   font-weight: bold;
   font-size: 20px;
-  pointer-events: none;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
+  line-height: 1.1;
+}
+.middle-label {
+  color: white;
+  font-weight: 600;
+  font-size: 9px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  white-space: normal;
+  text-align: center;
+  max-width: 180px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 #export-overlay {
@@ -346,7 +379,10 @@ body {
           <div class="panel">
             <div class="middle-wrapper">
               <img id="middle" class="middle-img" style="height:187px; width:194px;" src="cards/ora_egyedul.png" crossorigin="anonymous"/>
-              <span class="middle-value" id="middle-value"></span>
+              <div class="middle-text">
+                <span class="middle-value" id="middle-value"></span>
+                <span class="middle-label" id="middle-label"></span>
+              </div>
             </div>
           </div>
           <div class="panel panel-side">
@@ -365,16 +401,24 @@ body {
 
 <div id="export-overlay">
   <div class="spinner"></div>
-  <span id="export-msg">Exportálás folyamatban...</span>
+  <span id="export-msg"></span>
 </div>
 
 <script>
 const ALL_STATS_RAW = '{{ALL_STATS}}';
+const LABELS_RAW    = '{{LABELS}}';
+
 let allStats = {};
+let labels   = {};
 let currentPage = '';
+
 try {
   allStats = JSON.parse(ALL_STATS_RAW);
   currentPage = Object.keys(allStats)[0];
+} catch(e) {}
+
+try {
+  labels = JSON.parse(LABELS_RAW);
 } catch(e) {}
 
 const BASE_SCALE = 0.57;
@@ -422,12 +466,12 @@ const IMGS = {
 };
 
 const CARDS = {
-  kg_co2:   { side:'left',  icon:'cards/kg.png',        valueKey:'kg_co2' },
-  wash:     { side:'left',  icon:'cards/washing.png',   valueKey:'wash' },
-  bp_paris: { side:'left',  icon:'cards/car.png',       valueKey:'bp_paris_trips' },
-  kg_saved: { side:'right', icon:'cards/kg.png',        valueKey:'kg_saved' },
-  kwh:      { side:'right', icon:'cards/light.png',     valueKey:'kwh' },
-  house:    { side:'right', icon:'cards/household.png', valueKey:'house' },
+  kg_co2:   { side:'left',  icon:'cards/kg.png',        valueKey:'kg_co2',        labelKey:'kg_co2'   },
+  wash:     { side:'left',  icon:'cards/washing.png',   valueKey:'wash',           labelKey:'wash'     },
+  bp_paris: { side:'left',  icon:'cards/car.png',       valueKey:'bp_paris_trips', labelKey:'bp_paris' },
+  kg_saved: { side:'right', icon:'cards/kg.png',        valueKey:'kg_saved',       labelKey:'kg_saved' },
+  kwh:      { side:'right', icon:'cards/light.png',     valueKey:'kwh',            labelKey:'kwh'      },
+  house:    { side:'right', icon:'cards/household.png', valueKey:'house',          labelKey:'house'    },
 };
 
 let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
@@ -436,6 +480,17 @@ let dragged = null;
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
   return allStats[currentPage] ? allStats[currentPage][key] : '';
+}
+
+function getLabel(cardId) {
+  const lk = CARDS[cardId].labelKey;
+  const l  = labels[lk];
+  if (!l) return '';
+  if (lk === 'bp_paris') {
+    const trips = allStats[currentPage]?.bp_paris_trips_count ?? '';
+    return trips ? `${trips} × ${l.route}` : l.route;
+  }
+  return l.description || '';
 }
 
 function getState(panelId, idx, total) {
@@ -470,8 +525,14 @@ function buildSelector() {
 }
 
 function updateValues() {
-  document.querySelectorAll('[data-card-id]').forEach(el => { el.textContent = getValue(el.dataset.cardId); });
+  document.querySelectorAll('[data-card-id]').forEach(el => {
+    el.textContent = getValue(el.dataset.cardId);
+  });
+  document.querySelectorAll('[data-label-id]').forEach(el => {
+    el.textContent = getLabel(el.dataset.labelId);
+  });
   document.getElementById('middle-value').textContent = allStats[currentPage]?.red_pct || '';
+  document.getElementById('middle-label').textContent = labels['red_pct']?.description || '';
 }
 
 function updateMiddle() {
@@ -524,11 +585,9 @@ function renderPanel(panelId, cards) {
   const side  = getSide(panelId);
   const total = cards.length;
 
-  // Panel magassága = 3 kártya tényleges összmagassága, kerekítési hiba nélkül
   const fullH = DIMS[side].lent.h + DIMS[side].kozep.h + DIMS[side].fent.h;
   el.style.height = `${fullH}px`;
 
-  // Üres slotok magassága: az adott pozíció kártyamagassága (i=0→lent, i=1→kozep, i=2→fent)
   const emptyHeights = [DIMS[side].lent.h, DIMS[side].kozep.h, DIMS[side].fent.h];
 
   for (let i = 0; i < 3; i++) {
@@ -542,8 +601,8 @@ function renderPanel(panelId, cards) {
       slot.appendChild(makeCard(cards[i], panelId, i, total));
     } else {
       slot.classList.add('empty-slot');
-      slot.style.width  = `${DIMS[side].fent.w}px`;  // egységes szélesség, nem lóg ki
-      slot.style.height = `${emptyHeights[i]}px`;      // pozíció szerinti magasság
+      slot.style.width  = `${DIMS[side].fent.w}px`;
+      slot.style.height = `${emptyHeights[i]}px`;
     }
     slot.ondragover  = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
     slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
@@ -587,26 +646,46 @@ function makeCard(id, context, idx, total) {
   bg.className='card-bg'; bg.crossOrigin='anonymous';
 
   if (context==='tray') {
+    // ── Tároló kártya: ikon + szám ──
     card.style.width='130px'; card.style.height='50px';
     bg.src=IMGS[side].tarolo; card.appendChild(bg);
+
     const icon=document.createElement('img');
     icon.className='card-icon-tray'; icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
+
     const val=document.createElement('span');
     val.className='card-value-tray'; val.dataset.cardId=id; val.textContent=getValue(id);
     card.appendChild(val);
+
   } else {
+    // ── Panel kártya: ikon + szám + felirat ──
     const st=getState(context,idx,total), dim=DIMS[side][st];
     card.style.width=`${dim.w}px`; card.style.height=`${dim.h}px`;
     bg.src=IMGS[side][st]; card.appendChild(bg);
+
     const icon=document.createElement('img');
     icon.className = id==='house' ? 'card-icon-house' : id==='bp_paris' ? 'card-icon-car' : 'card-icon';
     icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
-    const val=document.createElement('span');
-    val.className=(context==='left'&&idx===0)?'card-value-indent':'card-value';
-    val.dataset.cardId=id; val.textContent=getValue(id);
-    card.appendChild(val);
+
+    // Szövegblokk: szám + felirat egymás alatt
+    const textBlock = document.createElement('div');
+    textBlock.className = 'card-text' + (context==='left' && idx===0 ? ' indent' : '');
+
+    const numEl = document.createElement('span');
+    numEl.className = 'card-number';
+    numEl.dataset.cardId = id;
+    numEl.textContent = getValue(id);
+    textBlock.appendChild(numEl);
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'card-label';
+    labelEl.dataset.labelId = id;
+    labelEl.textContent = getLabel(id);
+    textBlock.appendChild(labelEl);
+
+    card.appendChild(textBlock);
   }
 
   card.ondragstart = e => { e.stopPropagation(); dragged={id, from:getFrom(id)}; setTimeout(()=>card.classList.add('dragging'),0); };
