@@ -17,6 +17,7 @@ body {
   gap: 12px;
 }
 
+/* ── Toolbar: csak dropdownok ── */
 .toolbar {
   width: 100%;
   max-width: 1200px;
@@ -27,11 +28,19 @@ body {
   border: 1px solid #c8bfa8;
   border-radius: 12px;
   padding: 10px 18px;
+  flex-wrap: wrap;
+}
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
 }
 .toolbar-label {
   color: #3a4a3a;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -47,27 +56,34 @@ body {
   cursor: pointer;
   outline: none;
   flex: 1;
-  max-width: 300px;
 }
-.toolbar-spacer { flex: 1; }
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 18px;
+.toolbar select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.toolbar-group-pv {
+  flex: 0 0 auto;
+  min-width: unset;
+}
+.pv-input {
+  background: #f5f2ec;
+  color: #2d3a2d;
+  border: 1px solid #c8bfa8;
   border-radius: 8px;
-  border: none;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  white-space: nowrap;
+  outline: none;
+  width: 150px;
+  text-align: right;
+  font-family: 'Segoe UI', sans-serif;
 }
-.export-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-.export-btn:active { transform: translateY(0); }
-.export-btn.png { background: #5a7a5a; color: #fff; }
-.export-btn svg { flex-shrink: 0; }
+.pv-input:focus {
+  border-color: #5a7a5a;
+  background: #fff;
+}
 
+/* ── Main layout ── */
 .main-layout {
   display: flex;
   align-items: flex-start;
@@ -124,6 +140,7 @@ body {
   background: transparent;
 }
 
+/* ── Infographic wrapper ── */
 .infographic-wrapper {
   flex: 1;
   position: relative;
@@ -142,11 +159,77 @@ body {
 }
 .overlay {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  inset: 0;
   pointer-events: none;
+  z-index: 5;
 }
+/* ── Infografika szöveg overlay-ek ── */
+.infog-filter-label,
+.infog-subtitle,
+.infog-pv-label {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+/* Felső fehér terület: 0%-13% */
+.infog-filter-label {
+  top: 0; left: 3%; right: 0; height: 13%;
+  justify-content: flex-start;
+  color: #2d5a1b;
+  font-weight: 700;
+  font-size: 1.8vw;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  z-index: 10;
+}
+/* Zöld sáv: 13%-18.5% */
+.infog-subtitle {
+  top: 13%; left: 10%; right: 25%; height: 5.5%;
+  color: white;
+  font-weight: 600;
+  font-size: 1.1vw;
+  z-index: 10;
+}
+/* Nagy fekete sáv: 44.8%-51.4% */
+.infog-pv-label {
+  top: 44.8%; left: 8%; right: 27%; height: 6.6%;
+  justify-content: flex-start;
+  color: white;
+  font-weight: 600;
+  font-size: 1.2vw;
+  text-align: left;
+  white-space: normal;
+  z-index: 10;
+}
+.export-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.export-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.export-btn:active { transform: translateY(0); }
+.export-btn.png { background: #5a7a5a; color: #fff; }
+.export-btn.pdf { background: #7a5a3a; color: #fff; }
+.export-btn svg { flex-shrink: 0; }
 
+/* ── Drag & drop area ── */
 .dragdrop-area {
   position: absolute;
   top: 51.5%;
@@ -240,7 +323,6 @@ body {
   object-fit: contain;
 }
 
-/* Tray szöveg */
 .card-value-tray {
   position: absolute;
   right: 6px; top: 50%;
@@ -253,7 +335,6 @@ body {
   white-space: nowrap;
 }
 
-/* Panel kártya szövegblokk */
 .card-text {
   position: absolute;
   right: 8px; top: 50%;
@@ -358,17 +439,25 @@ body {
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
+<!-- Toolbar: webshop + oldaltípus dropdownok + PV input -->
 <div class="toolbar" id="toolbar">
-  <span class="toolbar-label">Oldal:</span>
-  <select id="selector" onchange="onPageChange(this.value)"></select>
-  <div class="toolbar-spacer"></div>
-  <button class="export-btn png" onclick="exportPNG()">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Kép mentése
-  </button>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Webshop:</span>
+    <select id="sel-website" onchange="onWebsiteChange(this.value)"></select>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Oldaltípus:</span>
+    <select id="sel-pagetype" onchange="onPagetypeChange(this.value)"></select>
+  </div>
+  <div class="toolbar-group toolbar-group-pv">
+    <span class="toolbar-label">Page visit:</span>
+    <input type="text" id="pv-input" class="pv-input" value="120 000 000"
+      oninput="onPVInput(event)" onblur="onPVBlur(event)" />
+  </div>
 </div>
 
 <div class="main-layout" id="main-layout">
@@ -380,6 +469,10 @@ body {
   <div class="infographic-wrapper">
     <div id="export-target">
       <img class="bg-img" id="bg-img" src="cards/empty_template.png" crossorigin="anonymous"/>
+      <!-- Szöveg divek közvetlenül az export-target-ben: a bg-img adja a magasságot -->
+      <div class="infog-filter-label" id="infog-filter-label"></div>
+      <div class="infog-subtitle" id="infog-subtitle"></div>
+      <div class="infog-pv-label" id="infog-pv-label"></div>
       <div class="overlay">
         <div class="dragdrop-area" id="dragdrop-area">
           <div class="panel panel-side">
@@ -390,9 +483,7 @@ body {
               <img id="middle" class="middle-img" style="height:187px; width:194px;" src="cards/ora_egyedul.png" crossorigin="anonymous"/>
               <svg id="needle-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 194 187">
                 <g id="needle-line" style="transform-origin: 85.5px 84px; transform: rotate(-90deg);">
-                  <!-- Mutató: hegyétől a forgáspontig -->
                   <path d="M85.5,34 L90.5,84 L80.5,84 Z" fill="#444444"/>
-                  <!-- Fekete kör a forgáspontnál -->
                   <circle cx="85.5" cy="84" r="6" fill="#444444"/>
                 </g>
               </svg>
@@ -408,6 +499,18 @@ body {
         </div>
       </div>
     </div>
+
+    <!-- Export gombok: jobb alul, a kép alatt -->
+    <div class="export-bar">
+      <button class="export-btn pdf" onclick="exportPDF()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF mentése
+      </button>
+      <button class="export-btn png" onclick="exportPNG()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Kép mentése
+      </button>
+    </div>
   </div>
 
   <div class="sidebar">
@@ -422,22 +525,148 @@ body {
 </div>
 
 <script>
-const ALL_STATS_RAW = '{{ALL_STATS}}';
-const LABELS_RAW    = '{{LABELS}}';
+// ── Adatok (Python → JS) ─────────────────────────────────────────────────────
+const RAW_STATS_RAW  = '{{RAW_STATS}}';   // { key: { em_avg, red_pct } }
+const LABELS_RAW     = '{{LABELS}}';
+const WEBSITES_RAW   = '{{WEBSITES}}';
+const PAGETYPES_RAW  = '{{PAGETYPES}}';
+const CONSTANTS_RAW  = '{{CONSTANTS}}';
 
-let allStats = {};
-let labels   = {};
-let currentPage = '';
+let rawStats  = {};
+let labels    = {};
+let websites  = [];
+let pagetypes = {};
+let C         = {};   // konstansok: CO2_PER_WASH, CO2_PER_KM, stb.
 
-try {
-  allStats = JSON.parse(ALL_STATS_RAW);
-  currentPage = Object.keys(allStats)[0];
-} catch(e) {}
+try { rawStats  = JSON.parse(RAW_STATS_RAW); }  catch(e){}
+try { labels    = JSON.parse(LABELS_RAW); }     catch(e){}
+try { websites  = JSON.parse(WEBSITES_RAW); }   catch(e){}
+try { pagetypes = JSON.parse(PAGETYPES_RAW); }  catch(e){}
+try { C         = JSON.parse(CONSTANTS_RAW); }  catch(e){}
 
-try {
-  labels = JSON.parse(LABELS_RAW);
-} catch(e) {}
+let currentWebsite  = websites[0] || '';
+let currentPagetype = '';
+let currentPV       = C.default_pv || 120_000_000;
 
+// ── Számítás JS-ben ──────────────────────────────────────────────────────────
+function huFormat(val) {
+  // Magyar ezres elválasztó (szóköz)
+  return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
+}
+
+function calcFromRaw(raw, pv) {
+  // raw: { em_avg, red_pct }
+  // Visszaadja a kártyákon megjelenő számokat
+  const kg_co2   = raw.em_avg * pv / 1000;
+  const kg_saved = kg_co2 * raw.red_pct;
+  const kwh      = kg_saved / C.CO2_PER_KWH;
+  const bp_km    = kg_co2 / C.CO2_PER_KM;
+  const bp_trips = Math.round(bp_km / C.ref_km);
+  return {
+    kg_co2:               { num: huFormat(kg_co2),   unit: 'KG CO2E' },
+    wash:                 { num: huFormat(kg_co2 / C.CO2_PER_WASH), unit: 'DB' },
+    bp_paris_trips:       { num: huFormat(bp_km),    unit: 'KM' },
+    bp_paris_trips_count: bp_trips,
+    kg_saved:             { num: huFormat(kg_saved), unit: 'KG CO2E' },
+    kwh:                  { num: huFormat(kwh),      unit: 'KWH' },
+    house:                { num: huFormat(kwh / C.KWH_PER_HOUSE), unit: '' },
+    red_pct:              (raw.red_pct * 100).toFixed(1) + '%',
+  };
+}
+
+// ── Kulcs a rawStats-hoz ─────────────────────────────────────────────────────
+function statsKey(website, pagetype) {
+  if (!pagetype) return website === 'Összesítő' ? 'Összesítő' : website + '|';
+  return `${website}|${pagetype}`;
+}
+
+function getCurrentCalc() {
+  const key = statsKey(currentWebsite, currentPagetype);
+  const raw = rawStats[key];
+  if (!raw) return {};
+  return calcFromRaw(raw, currentPV);
+}
+
+// ── PV input logika ──────────────────────────────────────────────────────────
+function formatPVDisplay(val) {
+  return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
+}
+
+function parsePV(str) {
+  const n = parseInt(str.replace(/\D/g, ''), 10);
+  return (isNaN(n) || n <= 0) ? null : n;
+}
+
+function onPVInput(e) {
+  const val = parsePV(e.target.value);
+  if (val) {
+    currentPV = val;
+    updateValues();
+    updateTexts();
+  }
+}
+
+function onPVBlur(e) {
+  // Formázzuk vissza a mezőt kilépéskor
+  const val = parsePV(e.target.value);
+  if (val) {
+    e.target.value = formatPVDisplay(val);
+  } else {
+    e.target.value = formatPVDisplay(currentPV);
+  }
+}
+
+// ── Dropdown logika ──────────────────────────────────────────────────────────
+function buildWebsiteSelector() {
+  const el = document.getElementById('sel-website');
+  el.innerHTML = '';
+  websites.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w; opt.textContent = w;
+    if (w === currentWebsite) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+function buildPagetypeSelector(website) {
+  const el = document.getElementById('sel-pagetype');
+  el.innerHTML = '';
+  const pts = pagetypes[website] || [];
+  if (pts.length === 0) {
+    el.disabled = true;
+    const opt = document.createElement('option');
+    opt.textContent = '–';
+    el.appendChild(opt);
+    return;
+  }
+  el.disabled = false;
+  // Első opció: "Összes" → üres pagetype, az adott website összesítője
+  const allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = 'Összes oldaltípus';
+  if (currentPagetype === '') allOpt.selected = true;
+  el.appendChild(allOpt);
+  pts.forEach(pt => {
+    const opt = document.createElement('option');
+    opt.value = pt; opt.textContent = pt;
+    if (pt === currentPagetype) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+function onWebsiteChange(website) {
+  currentWebsite  = website;
+  currentPagetype = ''; // reset → Összes oldaltípus
+  buildPagetypeSelector(website);
+  updateValues();
+}
+
+function onPagetypeChange(pagetype) {
+  currentPagetype = pagetype;
+  updateValues();
+}
+
+// ── Értékek frissítése ───────────────────────────────────────────────────────
 const BASE_SCALE = 0.57;
 const DIMS = {
   bal: {
@@ -471,7 +700,7 @@ function notifyHeight() {
   const total = Math.ceil(
     toolbar.getBoundingClientRect().height +
     mainLayout.getBoundingClientRect().height +
-    16*2 + 12*2
+    16*2 + 12*3
   ) + 8;
   window.parent.postMessage({ type: 'streamlit:setFrameHeight', height: total }, '*');
 }
@@ -494,16 +723,55 @@ const CARDS = {
 let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
 let dragged = null;
 
+function buildFilterLabel() {
+  // Felső terület: "Összesítő – összes oldaltípus" / "Alza – 01-main page"
+  const site = currentWebsite || 'Összesítő';
+  const pt   = currentPagetype || 'összes oldaltípus';
+  return `${site} – ${pt}`;
+}
+
+function buildSubtitle() {
+  // Zöld sáv: "Mekkora a(z) X webshop(ok) oldalainak CO2e kibocsátása?"
+  if (currentWebsite === 'Összesítő' || !currentWebsite) {
+    const n = (websites || []).filter(w => w !== 'Összesítő').length;
+    return `Mekkora a ${n} vizsgált webshop oldalainak CO2e kibocsátása?`;
+  }
+  return `Mekkora a(z) ${currentWebsite} oldalainak CO2e kibocsátása?`;
+}
+
+function buildPVLabel() {
+  // Fekete sáv: "120 000 000 oldalbetöltés esetén összesen – 16 webshop"
+  const pvStr = formatPVDisplay(currentPV);
+  if (currentWebsite === 'Összesítő' || !currentWebsite) {
+    const n = (websites || []).filter(w => w !== 'Összesítő').length;
+    const pt = currentPagetype ? ` – ${currentPagetype}` : '';
+    return `${pvStr} oldalbetöltés esetén összesen – ${n} webshop${pt}`;
+  }
+  const pt = currentPagetype ? ` – ${currentPagetype}` : '';
+  return `${pvStr} oldalbetöltés esetén – ${currentWebsite}${pt}`;
+}
+
+function updateTexts() {
+  const filterEl   = document.getElementById('infog-filter-label');
+  const subtitleEl = document.getElementById('infog-subtitle');
+  const pvEl       = document.getElementById('infog-pv-label');
+  if (filterEl)   filterEl.textContent   = buildFilterLabel();
+  if (subtitleEl) subtitleEl.textContent = buildSubtitle();
+  if (pvEl)       pvEl.textContent       = buildPVLabel();
+}
+
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
-  const val = allStats[currentPage] ? allStats[currentPage][key] : '';
+  const calc = getCurrentCalc();
+  const val = calc[key];
   if (val && typeof val === 'object') return val.num || '';
   return val || '';
 }
 
 function getUnit(cardId) {
   const key = CARDS[cardId].valueKey;
-  const val = allStats[currentPage] ? allStats[currentPage][key] : '';
+  const calc = getCurrentCalc();
+  const val = calc[key];
   if (val && typeof val === 'object') return val.unit || '';
   return '';
 }
@@ -513,41 +781,11 @@ function getLabel(cardId) {
   const l  = labels[lk];
   if (!l) return '';
   if (lk === 'bp_paris') {
-    const trips = allStats[currentPage]?.bp_paris_trips_count ?? '';
+    const calc = getCurrentCalc();
+    const trips = calc?.bp_paris_trips_count ?? '';
     return trips ? `${trips} × ${l.route}` : l.route;
   }
   return l.description || '';
-}
-
-function getState(panelId, idx, total) {
-  if (total===1) return 'lent_egyedul';
-  if (idx===0)   return 'lent';
-  if (idx===total-1) return 'fent';
-  return 'kozep';
-}
-
-function getSide(panelId) { return panelId==='left' ? 'bal' : 'jobb'; }
-
-function getFrom(id) {
-  if (panelState.trayLeft.includes(id))  return 'trayLeft';
-  if (panelState.trayRight.includes(id)) return 'trayRight';
-  if (panelState.left.includes(id))      return 'left';
-  if (panelState.right.includes(id))     return 'right';
-}
-
-function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c!==id); }
-
-function onPageChange(page) { currentPage = page; updateValues(); }
-
-function buildSelector() {
-  const el = document.getElementById('selector');
-  el.innerHTML = '';
-  Object.keys(allStats).forEach(page => {
-    const opt = document.createElement('option');
-    opt.value = page; opt.textContent = page;
-    if (page===currentPage) opt.selected = true;
-    el.appendChild(opt);
-  });
 }
 
 function updateValues() {
@@ -557,25 +795,32 @@ function updateValues() {
   document.querySelectorAll('[data-label-id]').forEach(el => {
     el.textContent = getLabel(el.dataset.labelId);
   });
-  const redPctStr = allStats[currentPage]?.red_pct || '0%';
+  const calc = getCurrentCalc();
+  const redPctStr = calc?.red_pct || '0%';
   document.getElementById('middle-value').textContent = redPctStr;
   document.getElementById('middle-label').textContent = labels['red_pct']?.description || '';
-
-  // Mutató forgatása
   const redPct = parseFloat(redPctStr);
   const angle = (redPct / 100) * 180 - 90;
   const needle = document.getElementById('needle-line');
-  if (needle) {
-    needle.style.transform = `rotate(${angle}deg)`;
-  }
+  if (needle) needle.style.transform = `rotate(${angle}deg)`;
+  updateTexts();
 }
 
-function updateMiddle() {
-  const hasL = panelState.left.length>0, hasR = panelState.right.length>0;
-  let key = 'egyedul';
-  if (hasL && hasR) key='mindketto'; else if (hasL) key='bal'; else if (hasR) key='jobb';
-  document.getElementById('middle').src = IMGS.ora[key];
+// ── Panel / tray render ──────────────────────────────────────────────────────
+function getState(panelId, idx, total) {
+  if (total===1) return 'lent_egyedul';
+  if (idx===0)   return 'lent';
+  if (idx===total-1) return 'fent';
+  return 'kozep';
 }
+function getSide(panelId) { return panelId==='left' ? 'bal' : 'jobb'; }
+function getFrom(id) {
+  if (panelState.trayLeft.includes(id))  return 'trayLeft';
+  if (panelState.trayRight.includes(id)) return 'trayRight';
+  if (panelState.left.includes(id))      return 'left';
+  if (panelState.right.includes(id))     return 'right';
+}
+function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c!==id); }
 
 function render() {
   renderTray('tray-left',  panelState.trayLeft,  'left');
@@ -594,9 +839,7 @@ function renderTray(elId, cards, side) {
   [0,1,2].forEach(i => {
     const slot = document.createElement('div');
     slot.className = 'tray-slot' + (cards[i] ? ' has-card' : '');
-    if (cards[i]) {
-      slot.appendChild(makeCard(cards[i], 'tray'));
-    }
+    if (cards[i]) slot.appendChild(makeCard(cards[i], 'tray'));
     el.appendChild(slot);
   });
   el.ondragover  = e => { e.preventDefault(); el.classList.add('dragover'); };
@@ -619,10 +862,8 @@ function renderPanel(panelId, cards) {
   el.innerHTML = '';
   const side  = getSide(panelId);
   const total = cards.length;
-
   const fullH = DIMS[side].lent.h + DIMS[side].kozep.h + DIMS[side].fent.h;
   el.style.height = `${fullH}px`;
-
   const emptyHeights = [DIMS[side].lent.h, DIMS[side].kozep.h, DIMS[side].fent.h];
 
   for (let i = 0; i < 3; i++) {
@@ -659,9 +900,7 @@ function renderPanel(panelId, cards) {
     };
     el.appendChild(slot);
   }
-
   el.ondragover  = e => e.preventDefault();
-  el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
     e.preventDefault();
     if (!dragged||dragged.from===panelId) return;
@@ -681,43 +920,31 @@ function makeCard(id, context, idx, total) {
   bg.className='card-bg'; bg.crossOrigin='anonymous';
 
   if (context==='tray') {
-    // ── Tároló kártya: ikon + szám ──
     card.style.width='130px'; card.style.height='50px';
     bg.src=IMGS[side].tarolo; card.appendChild(bg);
-
     const icon=document.createElement('img');
     icon.className='card-icon-tray'; icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
-
     const val=document.createElement('span');
     val.className='card-value-tray'; val.dataset.cardId=id; val.textContent=getValue(id);
     card.appendChild(val);
-
   } else {
-    // ── Panel kártya: ikon + szám + felirat ──
     const st=getState(context,idx,total), dim=DIMS[side][st];
     card.style.width=`${dim.w}px`; card.style.height=`${dim.h}px`;
     bg.src=IMGS[side][st]; card.appendChild(bg);
-
     const icon=document.createElement('img');
     icon.className = id==='house' ? 'card-icon-house' : id==='bp_paris' ? 'card-icon-car' : 'card-icon';
     icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
     card.appendChild(icon);
-
-    // Szövegblokk: szám+unit egy sorban, felirat alatta
     const textBlock = document.createElement('div');
     textBlock.className = 'card-text' + (context==='left' && idx===0 ? ' indent' : '');
-
-    // Első sor: szám + mértékegység
     const numRow = document.createElement('div');
     numRow.style.cssText = 'display:flex;align-items:baseline;gap:3px;';
-
     const numEl = document.createElement('span');
     numEl.className = 'card-number';
     numEl.dataset.cardId = id;
     numEl.textContent = getValue(id);
     numRow.appendChild(numEl);
-
     const unit = getUnit(id);
     if (unit) {
       const unitEl = document.createElement('span');
@@ -726,8 +953,6 @@ function makeCard(id, context, idx, total) {
       numRow.appendChild(unitEl);
     }
     textBlock.appendChild(numRow);
-
-    // Második sor: felirat (csak ha van)
     const labelText = getLabel(id);
     if (labelText) {
       const labelEl = document.createElement('span');
@@ -736,15 +961,21 @@ function makeCard(id, context, idx, total) {
       labelEl.textContent = labelText;
       textBlock.appendChild(labelEl);
     }
-
     card.appendChild(textBlock);
   }
-
   card.ondragstart = e => { e.stopPropagation(); dragged={id, from:getFrom(id)}; setTimeout(()=>card.classList.add('dragging'),0); };
   card.ondragend   = () => { card.classList.remove('dragging'); if (dragged){dragged=null; render();} };
   return card;
 }
 
+function updateMiddle() {
+  const hasL = panelState.left.length>0, hasR = panelState.right.length>0;
+  let key = 'egyedul';
+  if (hasL && hasR) key='mindketto'; else if (hasL) key='bal'; else if (hasR) key='jobb';
+  document.getElementById('middle').src = IMGS.ora[key];
+}
+
+// ── Export ───────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
   document.getElementById('export-msg').textContent = msg;
   document.getElementById('export-overlay').classList.add('visible');
@@ -753,28 +984,57 @@ function hideExportOverlay() {
   document.getElementById('export-overlay').classList.remove('visible');
 }
 
-async function exportPNG() {
-  showExportOverlay('Kép mentése folyamatban...');
+async function captureCanvas() {
   const emptySlots = document.querySelectorAll('.empty-slot');
   emptySlots.forEach(s => s.classList.add('export-hide'));
+  const canvas = await html2canvas(document.getElementById('export-target'), {
+    useCORS:true, allowTaint:false, scale:4, backgroundColor:null, logging:false
+  });
+  emptySlots.forEach(s => s.classList.remove('export-hide'));
+  return canvas;
+}
+
+function exportTimestamp() {
+  const now = new Date();
+  return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
+async function exportPNG() {
+  showExportOverlay('Kép mentése folyamatban...');
   try {
-    const canvas = await html2canvas(document.getElementById('export-target'), {
-      useCORS:true, allowTaint:false, scale:4, backgroundColor:null, logging:false
-    });
-    const now = new Date();
-    const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+    const canvas = await captureCanvas();
     const link = document.createElement('a');
-    link.download = `infografika_${ts}.png`;
+    link.download = `infografika_${exportTimestamp()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   } catch(e) { alert('Export hiba: '+e.message); }
-  finally {
-    emptySlots.forEach(s => s.classList.remove('export-hide'));
-    hideExportOverlay();
-  }
+  finally { hideExportOverlay(); }
 }
 
-buildSelector();
+async function exportPDF() {
+  showExportOverlay('PDF mentése folyamatban...');
+  try {
+    const canvas = await captureCanvas();
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    // PDF mérete az infografika arányához igazítva (px → mm, 96dpi alapján)
+    const pxToMm = 25.4 / 96;
+    const pdfW = canvas.width  * pxToMm;
+    const pdfH = canvas.height * pxToMm;
+    const pdf = new jsPDF({ orientation: pdfW >= pdfH ? 'landscape' : 'portrait', unit: 'mm', format: [pdfW, pdfH] });
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+    pdf.save(`infografika_${exportTimestamp()}.pdf`);
+  } catch(e) { alert('PDF export hiba: '+e.message); }
+  finally { hideExportOverlay(); }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+buildWebsiteSelector();
+buildPagetypeSelector(currentWebsite);
+
+// PV mező kezdeti értéke
+document.getElementById('pv-input').value = formatPVDisplay(currentPV);
+
 const bgImg = document.getElementById('bg-img');
 if (bgImg.complete) render(); else bgImg.onload = () => render();
 
