@@ -3,3 +3,4 @@ pandas
 openpyxl
 geopy
 requests
+deep-translator
