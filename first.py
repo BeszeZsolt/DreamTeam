@@ -274,11 +274,11 @@ city1_fit, city2_fit = fit_cities(city1_raw, city2_raw)
 # ── Nyelvek miatt labelek cseréje ──────────────────────────────────────────────
 
 labels = {
-    "kg_co2":   {"description": ""},
+   "kg_co2":   {"description": shorten_label(translate_text("SZÉN-DIOXID KIBOCSÁTÁS", lang_code))},
     "wash":     {"description": shorten_label(translate_text("NAGYMOSÁS", lang_code))},
-    "bp_paris": {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
-    "kg_saved": {"description": ""},
-    "kwh":      {"description": ""},
+    "bp_paris": {"description": "", "route": shorten_label(translate_text(f"{city1_fit} → {city2_fit}", lang_code))},
+    "kg_saved": {"description": shorten_label(translate_text("CSÖKKENTETT SZÉN-DIOXID", lang_code))},
+    "kwh":      {"description": shorten_label(translate_text("ÉVES ÁRAMFOGYASZTÁS", lang_code))},
     "house":    {"description": shorten_label(translate_text("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA", lang_code))},
     "red_pct":  {"description": shorten_label(translate_text("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL", lang_code))},
     
