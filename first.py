@@ -8,6 +8,8 @@ import time
 
 from geopy.geocoders import Nominatim
 
+# Nyelvek miatt lett belerakva
+from deep_translator import GoogleTranslator
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
@@ -34,6 +36,24 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission -  all subpages",
 ]
 
+# ── Nyelvek megadása ───────────────────────────────────────────────────────
+LANGUAGES = {
+    "Angol": "en",
+    "Spanyol": "es",
+    "Francia": "fr",
+    "Német": "de",
+    "Kínai (egyszerűsített)": "zh-CN",
+    "Hindi": "hi",
+    "Arab": "ar",
+    "Orosz": "ru",
+    "Portugál": "pt",
+    "Japán": "ja",
+    "Olasz": "it",
+    "Koreai": "ko",
+    "Török": "tr",
+    "Holland": "nl",
+    "Magyar": "hu"
+}
 # ── Session state inicializálás ───────────────────────────────────────────────
 
 if "ref_km" not in st.session_state:
@@ -167,6 +187,20 @@ def get_road_distance(lat1, lon1, lat2, lon2):
     except Exception:
         return None
 
+
+# ── Nyelve fv. ─────────────────────────────────────────────────────────────────
+
+@st.cache_data(show_spinner=False)
+def translate_text(text: str, target_lang: str) -> str:
+    """Szöveg fordítása a megadott célnyelvre."""
+    if target_lang == "hu" or not text:
+        return text
+    try:
+        translator = GoogleTranslator(source='hu', target=target_lang)
+        return translator.translate(text)
+    except Exception:
+        return text
+        
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane infografika készítő")
@@ -200,6 +234,13 @@ df["website"] = df["website"].str.strip()
 
 st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
 
+# ── Több nyelvhez kell ─────────────────────────────────────────────────────
+
+st.divider()
+st.subheader("🌐 Nyelvbeállítások")
+selected_lang_name = st.selectbox("Válaszd ki az infografika nyelvét:", list(LANGUAGES.keys()))
+lang_code = LANGUAGES[selected_lang_name]
+
 # ── Drag&drop összerakása ─────────────────────────────────────────────────────
 
 st.divider()
@@ -230,14 +271,24 @@ websites_list = ["Összesítő"] + sorted(df["website"].unique().tolist())
 city1_raw, city2_raw = st.session_state["ref_label"].split(" → ")
 city1_fit, city2_fit = fit_cities(city1_raw, city2_raw)
 
+# ── Nyelvek miatt labelek cseréje ──────────────────────────────────────────────
+
 labels = {
     "kg_co2":   {"description": ""},
-    "wash":     {"description": shorten_label("NAGYMOSÁS")},
+    "wash":     {"description": shorten_label(translate_text("NAGYMOSÁS", lang_code))},
     "bp_paris": {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
     "kg_saved": {"description": ""},
     "kwh":      {"description": ""},
-    "house":    {"description": shorten_label("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA")},
-    "red_pct":  {"description": shorten_label("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL")},
+    "house":    {"description": shorten_label(translate_text("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA", lang_code))},
+    "red_pct":  {"description": shorten_label(translate_text("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL", lang_code))},
+    
+    # "kg_co2":   {"description": ""},
+    # "wash":     {"description": shorten_label("NAGYMOSÁS")},
+    # "bp_paris": {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
+    # "kg_saved": {"description": ""},
+    # "kwh":      {"description": ""},
+    # "house":    {"description": shorten_label("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA")},
+    # "red_pct":  {"description": shorten_label("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL")},
 }
 
 # Konstansok átadása a JS-nek (Python-ban definiáltak, JS számolja a végeredményt)
@@ -312,3 +363,4 @@ if "calc_dist_km" in st.session_state:
         f"távolságnak ({BP_PARIS_KM} km). "
         f"Az infografika értékei automatikusan frissültek az új referencia alapján."
     )
+
