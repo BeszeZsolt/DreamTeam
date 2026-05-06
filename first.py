@@ -5,11 +5,11 @@ import streamlit.components.v1 as components
 import base64
 import requests
 import time
+import uuid
 
 from geopy.geocoders import Nominatim
-
-# Nyelvek miatt lett belerakva
 from deep_translator import GoogleTranslator
+
 
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
@@ -36,40 +36,64 @@ REQUIRED_COLUMNS = [
     "Rank Reduced Carbon Emission -  all subpages",
 ]
 
-# ── Nyelvek megadása ───────────────────────────────────────────────────────
-LANGUAGES = {
-    "Angol": "en",
-    "Spanyol": "es",
-    "Francia": "fr",
-    "Német": "de",
-    "Kínai (egyszerűsített)": "zh-CN",
-    "Hindi": "hi",
-    "Arab": "ar",
-    "Orosz": "ru",
-    "Portugál": "pt",
-    "Japán": "ja",
-    "Olasz": "it",
-    "Koreai": "ko",
-    "Török": "tr",
-    "Holland": "nl",
-    "Magyar": "hu"
+CITY_NAMES = {
+    "hu": ("Budapest", "Párizs"),
+    "en": ("Budapest", "Paris"),
+    "de": ("Budapest", "Paris"),
+    "fr": ("Budapest", "Paris"),
+    "es": ("Budapest", "París"),
+    "it": ("Budapest", "Parigi"),
+    "nl": ("Budapest", "Parijs"),
+    "pt": ("Budapest", "Paris"),
+    "ru": ("Будапешт", "Париж"),
+    "ja": ("ブダペスト", "パリ"),
+    "zh-CN": ("布达佩斯", "巴黎"),
+    "ko": ("부다페스트", "파리"),
+    "ar": ("بودابست", "باريس"),
+    "hi": ("बुडापेस्ट", "पेरिस"),
+    "tr": ("Budapeşte", "Paris"),
 }
+
+LANGUAGES = {
+    "Hungarian": "hu",
+    "English":   "en",
+    "German":    "de",
+    "French":    "fr",
+    "Spanish":   "es",
+    "Italian":   "it",
+    "Dutch":     "nl",
+    "Portuguese":"pt",
+    "Russian":   "ru",
+    "Japanese":  "ja",
+    "Chinese (Simplified)": "zh-CN",
+    "Korean":    "ko",
+    "Arabic":    "ar",
+    "Hindi":     "hi",
+    "Turkish":   "tr",
+}
+
+@st.cache_data(show_spinner=False)
+def translate_text(text: str, target_lang: str) -> str:
+    if target_lang == "en" or not text:
+        return text
+    try:
+        translator = GoogleTranslator(source='en', target=target_lang)
+        return translator.translate(text)
+    except Exception:
+        return text
+
 # ── Session state inicializálás ───────────────────────────────────────────────
 
 if "ref_km" not in st.session_state:
     st.session_state["ref_km"] = BP_PARIS_KM
 if "ref_label" not in st.session_state:
-    st.session_state["ref_label"] = "Budapest → Párizs"
+    st.session_state["ref_label"] = "Budapest → Paris"
 
 # ── Segédfüggvények ───────────────────────────────────────────────────────────
 
 def img_to_base64(path):
     with open(path, "rb") as f:
         return "data:image/png;base64," + base64.b64encode(f.read()).decode()
-
-def hu(val: float) -> str:
-    """Szám formázása szóközös ezres elválasztóval."""
-    return f"{round(val):,}".replace(",", " ")
 
 def shorten_label(text: str, max_chars: int = 32) -> str:
     return text if len(text) <= max_chars else text[:max_chars].rstrip() + "."
@@ -148,18 +172,25 @@ def build_pagetypes_map(df: pd.DataFrame) -> dict:
 # ── Geocoder segédfüggvények ──────────────────────────────────────────────────
 
 @st.cache_data(show_spinner=False)
-def geocode_location(place: str):
-    geolocator = Nominatim(user_agent="carbon_crane_app", timeout=10)
+def geocode_location(place: str, language: str = "en"):
+    geolocator = Nominatim(
+        user_agent=f"carbon_crane_{uuid.uuid4().hex[:8]}",
+        timeout=10
+    )
     for attempt in range(3):
         try:
-            time.sleep(1)
-            result = geolocator.geocode(place)
+            time.sleep(1.1)
+            result = geolocator.geocode(place, language=language)
             return result
         except Exception as e:
-            if attempt < 2:
-                time.sleep(2 ** attempt)
+            err = str(e).lower()
+            if "rate" in err or "limit" in err or "429" in err:
+                time.sleep(3 * (attempt + 1))
+            elif attempt < 2:
+                time.sleep(2)
             else:
-                raise e
+                return None
+    return None
 
 def extract_city(location) -> str:
     raw = location.raw.get("address", {})
@@ -187,25 +218,11 @@ def get_road_distance(lat1, lon1, lat2, lon2):
     except Exception:
         return None
 
-
-# ── Nyelve fv. ─────────────────────────────────────────────────────────────────
-
-@st.cache_data(show_spinner=False)
-def translate_text(text: str, target_lang: str) -> str:
-    """Szöveg fordítása a megadott célnyelvre."""
-    if target_lang == "hu" or not text:
-        return text
-    try:
-        translator = GoogleTranslator(source='hu', target=target_lang)
-        return translator.translate(text)
-    except Exception:
-        return text
-        
 # ── UI ────────────────────────────────────────────────────────────────────────
 
-st.title("Carbon Crane infografika készítő")
+st.title("Carbon Crane Infographic Builder")
 
-uploaded = st.file_uploader("Excel fájl feltöltése (.xlsx)", type=["xlsx"])
+uploaded = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
 
 if not uploaded:
     st.stop()
@@ -214,17 +231,17 @@ try:
     xl = pd.ExcelFile(uploaded)
     matching = [s for s in xl.sheet_names if "carbon_scan_output_ecomm" in s]
     if not matching:
-        st.error("A fájlban nem található 'carbon_scan_output_ecomm' nevű sheet.")
+        st.error("No sheet named 'carbon_scan_output_ecomm' found in the file.")
         st.stop()
     df = xl.parse(matching[0], header=0)
     df.columns = df.columns.str.strip()  # trailing/leading szóközök eltávolítása
 except Exception:
-    st.error("A fájl nem olvasható. Ellenőrizd, hogy érvényes .xlsx fájlt töltöttél-e fel.")
+    st.error("File could not be read. Please upload a valid .xlsx file.")
     st.stop()
 
 missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
 if missing:
-    st.error("A fájl struktúrája nem megfelelő. Hiányzó oszlopok:")
+    st.error("File structure is invalid. Missing columns:")
     for col in missing:
         st.write(f"- `{col}`")
     st.stop()
@@ -232,14 +249,18 @@ if missing:
 df = df.dropna(subset=["website"])
 df["website"] = df["website"].str.strip()
 
-st.success(f"{len(df)} sor betöltve – {df['website'].nunique()} weboldal")
+# Panel állapot visszaolvasása query param-ból
+if "cc_state" in st.query_params:
+    try:
+        import base64 as _b64
+        raw = st.query_params["cc_state"]
+        decoded = json_lib.loads(_b64.b64decode(raw.encode()).decode())
+        st.session_state["panel_state"] = decoded
+    except Exception:
+        pass
 
-# ── Több nyelvhez kell ─────────────────────────────────────────────────────
-
-st.divider()
-st.subheader("🌐 Nyelvbeállítások")
-selected_lang_name = st.selectbox("Válaszd ki az infografika nyelvét:", list(LANGUAGES.keys()))
-lang_code = LANGUAGES[selected_lang_name]
+n_websites = df['website'].nunique()
+st.success(f"{len(df)} rows loaded – {n_websites} websites")
 
 # ── Drag&drop összerakása ─────────────────────────────────────────────────────
 
@@ -268,38 +289,76 @@ raw_stats     = build_raw_stats(df)
 pagetypes_map = build_pagetypes_map(df)
 websites_list = ["Összesítő"] + sorted(df["website"].unique().tolist())
 
-city1_raw, city2_raw = st.session_state["ref_label"].split(" → ")
+def safe_json(obj) -> str:
+    """JSON sorosítás – backtick escape-elve hogy a JS template literál ne törjön el."""
+    return json_lib.dumps(obj, ensure_ascii=False).replace("`", "\\`")
+
+col_lang, _ = st.columns([1, 3])
+with col_lang:
+    selected_lang_name = st.selectbox("Infographic language:", list(LANGUAGES.keys()))
+lang_code = LANGUAGES[selected_lang_name]
+
+# Ha még nem volt geocoder számítás, az alapértelmezett városneveket
+# a kiválasztott nyelv szerint adjuk meg
+default_city1, default_city2 = CITY_NAMES.get(lang_code, ("Budapest", "Paris"))
+ref_label = st.session_state["ref_label"]
+# Ha az alapértelmezett BP→Paris valamelyik változata van eltárolva, frissítjük a nyelvre
+if st.session_state["ref_km"] == BP_PARIS_KM:
+    ref_label = f"{default_city1} → {default_city2}"
+
+city1_raw, city2_raw = ref_label.split(" → ")
 city1_fit, city2_fit = fit_cities(city1_raw, city2_raw)
 
-# ── Nyelvek miatt labelek cseréje ──────────────────────────────────────────────
+def t(text: str) -> str:
+    """Rövid alias a fordításhoz."""
+    return translate_text(text, lang_code)
 
-labels = {
-   "kg_co2":   {"description": shorten_label(translate_text("SZÉN-DIOXID KIBOCSÁTÁS", lang_code))},
-    "wash":     {"description": shorten_label(translate_text("NAGYMOSÁS", lang_code))},
-    "bp_paris": {"description": "", "route": shorten_label(translate_text(f"{city1_fit} → {city2_fit}", lang_code))},
-    "kg_saved": {"description": shorten_label(translate_text("CSÖKKENTETT SZÉN-DIOXID", lang_code))},
-    "kwh":      {"description": shorten_label(translate_text("ÉVES ÁRAMFOGYASZTÁS", lang_code))},
-    "house":    {"description": shorten_label(translate_text("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA", lang_code))},
-    "red_pct":  {"description": shorten_label(translate_text("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL", lang_code))},
-
-    # Új labelek a teljes fordításhoz
-    "all_website": {"description": translate_text("Összesítő", lang_code)},
-    "all_pagetype": {"description": translate_text("összes oldaltípus", lang_code)},
-    "subtitle_multi": {"description": translate_text("Mekkora a {} vizsgált webshop oldalainak CO2e kibocsátása?", lang_code)},
-    "subtitle_single": {"description": translate_text("Mekkora a(z) {} oldalainak CO2e kibocsátása?", lang_code)},
-    "pv_multi": {"description": translate_text("{} oldalbetöltés esetén összesen – {} webshop", lang_code)},
-    "pv_single": {"description": translate_text("{} oldalbetöltés esetén – {}", lang_code)},
-    
-    # "kg_co2":   {"description": ""},
-    # "wash":     {"description": shorten_label("NAGYMOSÁS")},
-    # "bp_paris": {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
-    # "kg_saved": {"description": ""},
-    # "kwh":      {"description": ""},
-    # "house":    {"description": shorten_label("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA")},
-    # "red_pct":  {"description": shorten_label("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL")},
+HU_LABELS = {
+    "wash":           "NAGYMOSÁS",
+    "house":          "HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA",
+    "red_pct":        "ÁTLAGOS CSÖKKENTÉSI POTENCIÁL",
+    "all_website":    "Összesítő",
+    "all_pagetype":   "Összes oldal",
+    "subtitle_multi": "Mekkora a {} vizsgált webshop oldalainak CO\u2082e kibocsátása?",
+    "subtitle_single":"Mekkora a(z) {} oldalainak CO\u2082e kibocsátása?",
+    "pv_multi":       "{} megtekintés esetén összesen – {} webshop{}",
+    "pv_single":      "{} megtekintés esetén – {}{}",
 }
 
-# Konstansok átadása a JS-nek (Python-ban definiáltak, JS számolja a végeredményt)
+EN_LABELS = {
+    "wash":           "LAUNDRY LOADS",
+    "house":          "ANNUAL HOUSEHOLD ELECTRICITY",
+    "red_pct":        "AVERAGE REDUCTION POTENTIAL",
+    "all_website":    "Summary",
+    "all_pagetype":   "All pages",
+    "subtitle_multi": "What is the CO\u2082e footprint of the {} websites examined?",
+    "subtitle_single":"What is the CO\u2082e footprint of {}?",
+    "pv_multi":       "For {} page views across {} websites{}",
+    "pv_single":      "For {} page views – {}{}",
+}
+
+def get_label(key: str) -> str:
+    if lang_code == "hu":
+        return HU_LABELS.get(key, "")
+    return t(EN_LABELS.get(key, ""))
+
+labels = {
+    "kg_co2":         {"description": ""},
+    "wash":           {"description": shorten_label(get_label("wash"))},
+    "bp_paris":       {"description": "", "route": shorten_label(f"{city1_fit} → {city2_fit}")},
+    "kg_saved":       {"description": ""},
+    "kwh":            {"description": ""},
+    "house":          {"description": shorten_label(get_label("house"))},
+    "red_pct":        {"description": shorten_label(get_label("red_pct"))},
+    "all_website":    {"description": get_label("all_website")},
+    "all_pagetype":   {"description": get_label("all_pagetype")},
+    "unit_db":        {"description": ""},
+    "subtitle_multi": {"description": get_label("subtitle_multi")},
+    "subtitle_single":{"description": get_label("subtitle_single")},
+    "pv_multi":       {"description": get_label("pv_multi")},
+    "pv_single":      {"description": get_label("pv_single")},
+}
+
 constants = {
     "CO2_PER_WASH":  CO2_PER_WASH,
     "CO2_PER_KM":    CO2_PER_KM,
@@ -309,41 +368,42 @@ constants = {
     "default_pv":    120_000_000,
 }
 
-html = html.replace("{{RAW_STATS}}",  json_lib.dumps(raw_stats,     ensure_ascii=False))
-html = html.replace("{{LABELS}}",     json_lib.dumps(labels,        ensure_ascii=False))
-html = html.replace("{{WEBSITES}}",   json_lib.dumps(websites_list, ensure_ascii=False))
-html = html.replace("{{PAGETYPES}}",  json_lib.dumps(pagetypes_map, ensure_ascii=False))
-html = html.replace("{{CONSTANTS}}",  json_lib.dumps(constants,     ensure_ascii=False))
+html = html.replace("{{RAW_STATS}}",    safe_json(raw_stats))
+html = html.replace("{{LABELS}}",       safe_json(labels))
+html = html.replace("{{WEBSITES}}",     safe_json(websites_list))
+html = html.replace("{{PAGETYPES}}",    safe_json(pagetypes_map))
+html = html.replace("{{CONSTANTS}}",    safe_json(constants))
+html = html.replace("{{PANEL_STATE}}", safe_json(st.session_state.get("panel_state", None)))
 
 components.html(html, height=660, scrolling=False)
 
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
 st.divider()
-st.subheader("🚗 Útvonal-kalkulátor")
-st.caption("Válassz két helyszínt, és megmutatjuk, hányszor felel meg a carbon kibocsátás annak az útnak.")
+st.subheader("Route calculator")
+st.caption("Choose two locations to see how many times the carbon footprint equals that distance.")
 
 col_a, col_b = st.columns(2)
 with col_a:
-    loc1 = st.text_input("📍 Kiindulópont", value="Budapest, Hungary")
+    loc1 = st.text_input("Starting point", value="Budapest, Hungary")
 with col_b:
-    loc2 = st.text_input("🏁 Célpont", value="Paris, France")
+    loc2 = st.text_input("Destination", value="Paris, France")
 
-if st.button("Távolság kiszámítása"):
-    with st.spinner("Helyszínek keresése..."):
-        g1 = geocode_location(loc1)
-        g2 = geocode_location(loc2)
+if st.button("Calculate distance"):
+    with st.spinner("Looking up locations..."):
+        g1 = geocode_location(loc1, lang_code)
+        g2 = geocode_location(loc2, lang_code)
 
     if not g1:
-        st.error(f"Nem találtam meg ezt a helyet: {loc1}")
+        st.error(f"Could not find location: {loc1}")
     elif not g2:
-        st.error(f"Nem találtam meg ezt a helyet: {loc2}")
+        st.error(f"Could not find location: {loc2}")
     else:
-        with st.spinner("Útvonal kiszámítása..."):
+        with st.spinner("Calculating route..."):
             dist_km = get_road_distance(g1.latitude, g1.longitude, g2.latitude, g2.longitude)
 
         if dist_km is None:
-            st.error("Nem sikerült az útvonalat kiszámítani. Lehet, hogy nincs közúti összeköttetés (pl. különböző kontinensek)?")
+            st.error("Could not calculate route. There may be no road connection between the two locations.")
         else:
             city1 = extract_city(g1)
             city2 = extract_city(g2)
@@ -352,23 +412,42 @@ if st.button("Távolság kiszámítása"):
             st.session_state["calc_dist_km"]  = dist_km
             st.session_state["calc_address1"] = g1.address
             st.session_state["calc_address2"] = g2.address
+            st.session_state["calc_lat1"]     = g1.latitude
+            st.session_state["calc_lon1"]     = g1.longitude
+            st.session_state["calc_lat2"]     = g2.latitude
+            st.session_state["calc_lon2"]     = g2.longitude
+            st.session_state["calc_loc1_raw"] = loc1
+            st.session_state["calc_loc2_raw"] = loc2
             st.rerun()
 
 # ── Kalkulátor eredménye (rerun után is megmarad) ─────────────────────────────
 
 if "calc_dist_km" in st.session_state:
-    dist_km  = st.session_state["calc_dist_km"]
-    # A kalkulátornál csak az útvonal-info jelenik meg, PV-független adatok
-    em_avg   = df[COL_EM_ALL].mean()
-    red_raw  = build_raw_stats(df)["Összesítő"]
+    dist_km = st.session_state["calc_dist_km"]
 
-    st.success(f"📏 Közúti távolság: **{dist_km:,.0f} km** – ez lett az új referencia útvonal!")
-    st.caption(f"({st.session_state['calc_address1']}  →  {st.session_state['calc_address2']})")
+    # Városneveket újra lekérdezzük a kiválasztott nyelven
+    if "calc_loc1_raw" in st.session_state:
+        g1_local = geocode_location(st.session_state["calc_loc1_raw"], lang_code)
+        g2_local = geocode_location(st.session_state["calc_loc2_raw"], lang_code)
+        if g1_local and g2_local:
+            city1_local = extract_city(g1_local)
+            city2_local = extract_city(g2_local)
+            addr1 = g1_local.address
+            addr2 = g2_local.address
+            st.session_state["ref_label"] = f"{city1_local} → {city2_local}"
+        else:
+            addr1 = st.session_state.get("calc_address1", "")
+            addr2 = st.session_state.get("calc_address2", "")
+    else:
+        addr1 = st.session_state.get("calc_address1", "")
+        addr2 = st.session_state.get("calc_address2", "")
+
+    st.success(f"Road distance: **{dist_km:,.0f} km** – this is now the reference route!")
+    st.caption(f"({addr1}  →  {addr2})")
 
     bp_paris_equiv = dist_km / BP_PARIS_KM
     st.info(
-        f"A választott útvonal **{bp_paris_equiv:.2f}×** a Budapest–Párizs "
-        f"távolságnak ({BP_PARIS_KM} km). "
-        f"Az infografika értékei automatikusan frissültek az új referencia alapján."
+        f"The selected route is **{bp_paris_equiv:.2f}×** the Budapest–Paris "
+        f"distance ({BP_PARIS_KM} km). "
+        f"The infographic values have been updated to use this as the new reference route."
     )
-
