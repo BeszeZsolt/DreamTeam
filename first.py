@@ -281,6 +281,14 @@ labels = {
     "kwh":      {"description": shorten_label(translate_text("ÉVES ÁRAMFOGYASZTÁS", lang_code))},
     "house":    {"description": shorten_label(translate_text("HÁZTARTÁS ÉVES ÁRAMFOGYASZTÁSA", lang_code))},
     "red_pct":  {"description": shorten_label(translate_text("ÁTLAGOS CSÖKKENTÉSI POTENCIÁL", lang_code))},
+
+    # Új labelek a teljes fordításhoz
+    "all_website": {"description": translate_text("Összesítő", lang_code)},
+    "all_pagetype": {"description": translate_text("összes oldaltípus", lang_code)},
+    "subtitle_multi": {"description": translate_text("Mekkora a {} vizsgált webshop oldalainak CO2e kibocsátása?", lang_code)},
+    "subtitle_single": {"description": translate_text("Mekkora a(z) {} oldalainak CO2e kibocsátása?", lang_code)},
+    "pv_multi": {"description": translate_text("{} oldalbetöltés esetén összesen – {} webshop", lang_code)},
+    "pv_single": {"description": translate_text("{} oldalbetöltés esetén – {}", lang_code)},
     
     # "kg_co2":   {"description": ""},
     # "wash":     {"description": shorten_label("NAGYMOSÁS")},
