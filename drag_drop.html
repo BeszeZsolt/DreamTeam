@@ -643,7 +643,9 @@ function buildPagetypeSelector(website) {
   // Első opció: "Összes" → üres pagetype, az adott website összesítője
   const allOpt = document.createElement('option');
   allOpt.value = '';
-  allOpt.textContent = 'Összes oldaltípus';
+  allOpt.textContent = labels['all_pagetype']?.description || 'Összes oldaltípus';
+  // EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
+  // allOpt.textContent = 'Összes oldaltípus';
   if (currentPagetype === '') allOpt.selected = true;
   el.appendChild(allOpt);
   pts.forEach(pt => {
@@ -723,33 +725,68 @@ const CARDS = {
 let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
 let dragged = null;
 
+// FORDÍTÁS MIATT ÁTÍRTAM EZT A FV.-T
 function buildFilterLabel() {
-  // Felső terület: "Összesítő – összes oldaltípus" / "Alza – 01-main page"
-  const site = currentWebsite || 'Összesítő';
-  const pt   = currentPagetype || 'összes oldaltípus';
+  const site = currentWebsite === 'Összesítő' ? (labels['all_website']?.description || 'Összesítő') : currentWebsite;
+  const pt   = currentPagetype || (labels['all_pagetype']?.description || 'összes oldaltípus');
   return `${site} – ${pt}`;
 }
+// function buildFilterLabel() {
+  // Felső terület: "Összesítő – összes oldaltípus" / "Alza – 01-main page"
+//  const site = currentWebsite || 'Összesítő';
+//  const pt   = currentPagetype || 'összes oldaltípus';
+//  return `${site} – ${pt}`;
+//}
 
+// EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
 function buildSubtitle() {
-  // Zöld sáv: "Mekkora a(z) X webshop(ok) oldalainak CO2e kibocsátása?"
   if (currentWebsite === 'Összesítő' || !currentWebsite) {
     const n = (websites || []).filter(w => w !== 'Összesítő').length;
-    return `Mekkora a ${n} vizsgált webshop oldalainak CO2e kibocsátása?`;
+    const template = labels['subtitle_multi']?.description || 'Mekkora a {} vizsgált webshop oldalainak CO2e kibocsátása?';
+    return template.replace('{}', n);
   }
-  return `Mekkora a(z) ${currentWebsite} oldalainak CO2e kibocsátása?`;
+  const template = labels['subtitle_single']?.description || 'Mekkora a(z) {} oldalainak CO2e kibocsátása?';
+  return template.replace('{}', currentWebsite);
 }
+// function buildSubtitle() {
+  // Zöld sáv: "Mekkora a(z) X webshop(ok) oldalainak CO2e kibocsátása?"
+//   if (currentWebsite === 'Összesítő' || !currentWebsite) {
+//     const n = (websites || []).filter(w => w !== 'Összesítő').length;
+//     return `Mekkora a ${n} vizsgált webshop oldalainak CO2e kibocsátása?`;
+//   }
+//   return `Mekkora a(z) ${currentWebsite} oldalainak CO2e kibocsátása?`;
+// }
 
+// EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
 function buildPVLabel() {
-  // Fekete sáv: "120 000 000 oldalbetöltés esetén összesen – 16 webshop"
   const pvStr = formatPVDisplay(currentPV);
   if (currentWebsite === 'Összesítő' || !currentWebsite) {
     const n = (websites || []).filter(w => w !== 'Összesítő').length;
     const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-    return `${pvStr} oldalbetöltés esetén összesen – ${n} webshop${pt}`;
+    const template = labels['pv_multi']?.description || '{} oldalbetöltés esetén összesen – {} webshop{}';
+    return template
+      .replace('{}', pvStr)
+      .replace('{}', n)
+      .replace('{}', pt);
   }
   const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-  return `${pvStr} oldalbetöltés esetén – ${currentWebsite}${pt}`;
+  const template = labels['pv_single']?.description || '{} oldalbetöltés esetén – {}{}';
+  return template
+    .replace('{}', pvStr)
+    .replace('{}', currentWebsite)
+    .replace('{}', pt);
 }
+// function buildPVLabel() {
+  // Fekete sáv: "120 000 000 oldalbetöltés esetén összesen – 16 webshop"
+//   const pvStr = formatPVDisplay(currentPV);
+//   if (currentWebsite === 'Összesítő' || !currentWebsite) {
+//     const n = (websites || []).filter(w => w !== 'Összesítő').length;
+//     const pt = currentPagetype ? ` – ${currentPagetype}` : '';
+//     return `${pvStr} oldalbetöltés esetén összesen – ${n} webshop${pt}`;
+//   }
+//   const pt = currentPagetype ? ` – ${currentPagetype}` : '';
+//   return `${pvStr} oldalbetöltés esetén – ${currentWebsite}${pt}`;
+// }
 
 function updateTexts() {
   const filterEl   = document.getElementById('infog-filter-label');
