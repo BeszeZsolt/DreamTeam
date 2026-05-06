@@ -2,12 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
 <style>
 html { min-width: 600px; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
   background: #f5f2ec;
   min-height: 100vh;
   display: flex;
@@ -17,7 +18,6 @@ body {
   gap: 12px;
 }
 
-/* ── Toolbar: csak dropdownok ── */
 .toolbar {
   width: 100%;
   max-width: 1200px;
@@ -65,6 +65,10 @@ body {
   flex: 0 0 auto;
   min-width: unset;
 }
+.toolbar-group-lang {
+  flex: 0 0 auto;
+  min-width: unset;
+}
 .pv-input {
   background: #f5f2ec;
   color: #2d3a2d;
@@ -76,14 +80,13 @@ body {
   outline: none;
   width: 150px;
   text-align: right;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
 }
 .pv-input:focus {
   border-color: #5a7a5a;
   background: #fff;
 }
 
-/* ── Main layout ── */
 .main-layout {
   display: flex;
   align-items: flex-start;
@@ -140,7 +143,6 @@ body {
   background: transparent;
 }
 
-/* ── Infographic wrapper ── */
 .infographic-wrapper {
   flex: 1;
   position: relative;
@@ -163,6 +165,7 @@ body {
   pointer-events: none;
   z-index: 5;
 }
+
 /* ── Infografika szöveg overlay-ek ── */
 .infog-filter-label,
 .infog-subtitle,
@@ -172,25 +175,25 @@ body {
   display: flex;
   align-items: center;
   overflow: hidden;
+  font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
 }
 /* Felső fehér terület: 0%-13% */
 .infog-filter-label {
-  top: 0; left: 3%; right: 0; height: 13%;
+  top: 0; left: 7%; right: 0; height: 13%;
   justify-content: flex-start;
   color: #2d5a1b;
   font-weight: 700;
   font-size: 1.8vw;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  text-align: left;
   z-index: 10;
 }
 /* Zöld sáv: 13%-18.5% */
 .infog-subtitle {
-  top: 13%; left: 10%; right: 25%; height: 5.5%;
+  top: 13%; left: 11%; right: 25%; height: 5.5%;
   color: white;
   font-weight: 600;
-  font-size: 1.1vw;
+  font-size: 0.95vw;
   z-index: 10;
 }
 /* Nagy fekete sáv: 44.8%-51.4% */
@@ -199,11 +202,11 @@ body {
   justify-content: flex-start;
   color: white;
   font-weight: 600;
-  font-size: 1.2vw;
-  text-align: left;
+  font-size: 1.05vw;
   white-space: normal;
   z-index: 10;
 }
+
 .export-bar {
   display: flex;
   justify-content: flex-end;
@@ -223,13 +226,15 @@ body {
   transition: opacity 0.15s, transform 0.1s;
   white-space: nowrap;
 }
-.export-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.export-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
 .export-btn:active { transform: translateY(0); }
 .export-btn.png { background: #5a7a5a; color: #fff; }
 .export-btn.pdf { background: #7a5a3a; color: #fff; }
 .export-btn svg { flex-shrink: 0; }
 
-/* ── Drag & drop area ── */
 .dragdrop-area {
   position: absolute;
   top: 51.5%;
@@ -239,9 +244,11 @@ body {
   align-items: flex-start;
   pointer-events: all;
 }
-
-.panel { display: flex; flex-direction: column; align-items: center; }
-
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .panel-slots {
   display: flex;
   flex-direction: column-reverse;
@@ -249,9 +256,7 @@ body {
   background: transparent;
   overflow: visible;
 }
-
 .panel-side { margin-top: 18px; }
-
 .slot {
   display: flex;
   align-items: center;
@@ -260,7 +265,10 @@ body {
   overflow: visible;
   transition: background 0.15s;
 }
-.slot.slot-dragover { background: rgba(90,122,90,0.15); border-radius: 6px; }
+.slot.slot-dragover {
+  background: rgba(90,122,90,0.15);
+  border-radius: 6px;
+}
 .empty-slot {
   background: rgba(200,191,168,0.3);
   border-radius: 6px;
@@ -322,7 +330,6 @@ body {
   pointer-events: none;
   object-fit: contain;
 }
-
 .card-value-tray {
   position: absolute;
   right: 6px; top: 50%;
@@ -334,7 +341,6 @@ body {
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap;
 }
-
 .card-text {
   position: absolute;
   right: 8px; top: 50%;
@@ -375,14 +381,16 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 .card.dragging { opacity: 0.35; }
 
 .middle-wrapper {
   position: relative;
   display: inline-block;
 }
-.middle-img { display: block; pointer-events: none; }
+.middle-img {
+  display: block;
+  pointer-events: none;
+}
 .middle-text {
   position: absolute;
   bottom: 18%; left: 45%;
@@ -443,18 +451,17 @@ body {
 </head>
 <body>
 
-<!-- Toolbar: webshop + oldaltípus dropdownok + PV input -->
 <div class="toolbar" id="toolbar">
   <div class="toolbar-group">
-    <span class="toolbar-label">Webshop:</span>
+    <span class="toolbar-label">Website:</span>
     <select id="sel-website" onchange="onWebsiteChange(this.value)"></select>
   </div>
   <div class="toolbar-group">
-    <span class="toolbar-label">Oldaltípus:</span>
+    <span class="toolbar-label">Page type:</span>
     <select id="sel-pagetype" onchange="onPagetypeChange(this.value)"></select>
   </div>
   <div class="toolbar-group toolbar-group-pv">
-    <span class="toolbar-label">Page visit:</span>
+    <span class="toolbar-label">Page visits:</span>
     <input type="text" id="pv-input" class="pv-input" value="120 000 000"
       oninput="onPVInput(event)" onblur="onPVBlur(event)" />
   </div>
@@ -462,14 +469,13 @@ body {
 
 <div class="main-layout" id="main-layout">
   <div class="sidebar">
-    <div class="sidebar-title">Bal tároló</div>
+    <div class="sidebar-title">Left tray</div>
     <div class="tray" id="tray-left"></div>
   </div>
 
   <div class="infographic-wrapper">
     <div id="export-target">
       <img class="bg-img" id="bg-img" src="cards/empty_template.png" crossorigin="anonymous"/>
-      <!-- Szöveg divek közvetlenül az export-target-ben: a bg-img adja a magasságot -->
       <div class="infog-filter-label" id="infog-filter-label"></div>
       <div class="infog-subtitle" id="infog-subtitle"></div>
       <div class="infog-pv-label" id="infog-pv-label"></div>
@@ -500,21 +506,20 @@ body {
       </div>
     </div>
 
-    <!-- Export gombok: jobb alul, a kép alatt -->
     <div class="export-bar">
       <button class="export-btn pdf" onclick="exportPDF()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        PDF mentése
+        PDF export
       </button>
       <button class="export-btn png" onclick="exportPNG()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Kép mentése
+        Save image
       </button>
     </div>
   </div>
 
   <div class="sidebar">
-    <div class="sidebar-title">Jobb tároló</div>
+    <div class="sidebar-title">Right tray</div>
     <div class="tray" id="tray-right"></div>
   </div>
 </div>
@@ -525,18 +530,18 @@ body {
 </div>
 
 <script>
-// ── Adatok (Python → JS) ─────────────────────────────────────────────────────
-const RAW_STATS_RAW  = '{{RAW_STATS}}';   // { key: { em_avg, red_pct } }
-const LABELS_RAW     = '{{LABELS}}';
-const WEBSITES_RAW   = '{{WEBSITES}}';
-const PAGETYPES_RAW  = '{{PAGETYPES}}';
-const CONSTANTS_RAW  = '{{CONSTANTS}}';
+const RAW_STATS_RAW   = `{{RAW_STATS}}`;
+const LABELS_RAW      = `{{LABELS}}`;
+const WEBSITES_RAW    = `{{WEBSITES}}`;
+const PAGETYPES_RAW   = `{{PAGETYPES}}`;
+const CONSTANTS_RAW   = `{{CONSTANTS}}`;
+const PANEL_STATE_RAW = `{{PANEL_STATE}}`;
 
 let rawStats  = {};
 let labels    = {};
 let websites  = [];
 let pagetypes = {};
-let C         = {};   // konstansok: CO2_PER_WASH, CO2_PER_KM, stb.
+let C         = {};
 
 try { rawStats  = JSON.parse(RAW_STATS_RAW); }  catch(e){}
 try { labels    = JSON.parse(LABELS_RAW); }     catch(e){}
@@ -544,19 +549,51 @@ try { websites  = JSON.parse(WEBSITES_RAW); }   catch(e){}
 try { pagetypes = JSON.parse(PAGETYPES_RAW); }  catch(e){}
 try { C         = JSON.parse(CONSTANTS_RAW); }  catch(e){}
 
-let currentWebsite  = websites[0] || '';
-let currentPagetype = '';
-let currentPV       = C.default_pv || 120_000_000;
+// Elmentett panel állapot visszatöltése (Pythonból jön)
+let savedPanel = null;
+try {
+  if (PANEL_STATE_RAW && PANEL_STATE_RAW !== 'null') {
+    savedPanel = JSON.parse(PANEL_STATE_RAW);
+  }
+} catch(e) {}
 
-// ── Számítás JS-ben ──────────────────────────────────────────────────────────
+let currentWebsite  = savedPanel?.website  || websites[0] || '';
+let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
+let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
+
+// panelState alapértelmezett, felülírja a savedPanel ha van
+let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
+if (savedPanel?.trayLeft) panelState = {
+  trayLeft:  savedPanel.trayLeft,
+  trayRight: savedPanel.trayRight,
+  left:      savedPanel.left,
+  right:     savedPanel.right,
+};
+
+// Állapot küldése Pythonnak query param-on keresztül
+function sendStateToParent() {
+  try {
+    const state = {
+      trayLeft:  panelState.trayLeft,
+      trayRight: panelState.trayRight,
+      left:      panelState.left,
+      right:     panelState.right,
+      website:   currentWebsite,
+      pagetype:  currentPagetype,
+      pv:        currentPV,
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    const url = new URL(window.parent.location.href);
+    url.searchParams.set('cc_state', encoded);
+    window.parent.history.replaceState(null, '', url.toString());
+  } catch(e) {}
+}
+
 function huFormat(val) {
-  // Magyar ezres elválasztó (szóköz)
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
 
 function calcFromRaw(raw, pv) {
-  // raw: { em_avg, red_pct }
-  // Visszaadja a kártyákon megjelenő számokat
   const kg_co2   = raw.em_avg * pv / 1000;
   const kg_saved = kg_co2 * raw.red_pct;
   const kwh      = kg_saved / C.CO2_PER_KWH;
@@ -564,7 +601,7 @@ function calcFromRaw(raw, pv) {
   const bp_trips = Math.round(bp_km / C.ref_km);
   return {
     kg_co2:               { num: huFormat(kg_co2),   unit: 'KG CO2E' },
-    wash:                 { num: huFormat(kg_co2 / C.CO2_PER_WASH), unit: 'DB' },
+    wash:                 { num: huFormat(kg_co2 / C.CO2_PER_WASH), unit: labels['unit_db']?.description || '' },
     bp_paris_trips:       { num: huFormat(bp_km),    unit: 'KM' },
     bp_paris_trips_count: bp_trips,
     kg_saved:             { num: huFormat(kg_saved), unit: 'KG CO2E' },
@@ -574,7 +611,6 @@ function calcFromRaw(raw, pv) {
   };
 }
 
-// ── Kulcs a rawStats-hoz ─────────────────────────────────────────────────────
 function statsKey(website, pagetype) {
   if (!pagetype) return website === 'Összesítő' ? 'Összesítő' : website + '|';
   return `${website}|${pagetype}`;
@@ -587,7 +623,6 @@ function getCurrentCalc() {
   return calcFromRaw(raw, currentPV);
 }
 
-// ── PV input logika ──────────────────────────────────────────────────────────
 function formatPVDisplay(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
@@ -599,30 +634,21 @@ function parsePV(str) {
 
 function onPVInput(e) {
   const val = parsePV(e.target.value);
-  if (val) {
-    currentPV = val;
-    updateValues();
-    updateTexts();
-  }
+  if (val) { currentPV = val; updateValues(); updateTexts(); }
 }
 
 function onPVBlur(e) {
-  // Formázzuk vissza a mezőt kilépéskor
   const val = parsePV(e.target.value);
-  if (val) {
-    e.target.value = formatPVDisplay(val);
-  } else {
-    e.target.value = formatPVDisplay(currentPV);
-  }
+  e.target.value = formatPVDisplay(val || currentPV);
 }
 
-// ── Dropdown logika ──────────────────────────────────────────────────────────
 function buildWebsiteSelector() {
   const el = document.getElementById('sel-website');
   el.innerHTML = '';
   websites.forEach(w => {
     const opt = document.createElement('option');
-    opt.value = w; opt.textContent = w;
+    opt.value = w;
+    opt.textContent = w === 'Összesítő' ? (labels['all_website']?.description || w) : w;
     if (w === currentWebsite) opt.selected = true;
     el.appendChild(opt);
   });
@@ -640,12 +666,9 @@ function buildPagetypeSelector(website) {
     return;
   }
   el.disabled = false;
-  // Első opció: "Összes" → üres pagetype, az adott website összesítője
   const allOpt = document.createElement('option');
   allOpt.value = '';
-  allOpt.textContent = labels['all_pagetype']?.description || 'Összes oldaltípus';
-  // EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
-  // allOpt.textContent = 'Összes oldaltípus';
+  allOpt.textContent = labels['all_pagetype']?.description || 'All pages';
   if (currentPagetype === '') allOpt.selected = true;
   el.appendChild(allOpt);
   pts.forEach(pt => {
@@ -658,7 +681,7 @@ function buildPagetypeSelector(website) {
 
 function onWebsiteChange(website) {
   currentWebsite  = website;
-  currentPagetype = ''; // reset → Összes oldaltípus
+  currentPagetype = '';
   buildPagetypeSelector(website);
   updateValues();
 }
@@ -668,7 +691,50 @@ function onPagetypeChange(pagetype) {
   updateValues();
 }
 
-// ── Értékek frissítése ───────────────────────────────────────────────────────
+// ── Szöveg összerakás ────────────────────────────────────────────────────────
+// CO2 alsó indexként: "CO\u2082" unicode karakterrel, hogy textContent-tel is működjön
+function buildFilterLabel() {
+  const site = currentWebsite === 'Összesítő'
+    ? (labels['all_website']?.description || 'Összesítő')
+    : currentWebsite;
+  const pt = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const sep = currentPagetype ? ': ' : ' – ';
+  return `${site}${sep}${pt}`;
+}
+
+function buildSubtitle() {
+  if (currentWebsite === 'Összesítő' || !currentWebsite) {
+    const n = (websites || []).filter(w => w !== 'Összesítő').length;
+    const template = labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?';
+    return template.replace('{}', n);
+  }
+  const template = labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?';
+  return template.replace('{}', currentWebsite);
+}
+
+function buildPVLabel() {
+  const pvStr = formatPVDisplay(currentPV);
+  if (currentWebsite === 'Összesítő' || !currentWebsite) {
+    const n = (websites || []).filter(w => w !== 'Összesítő').length;
+    const pt = currentPagetype ? `: ${currentPagetype}` : '';
+    const template = labels['pv_multi']?.description || 'For {} page views across {} websites{}';
+    return template.replace('{}', pvStr).replace('{}', n).replace('{}', pt);
+  }
+  const pt = currentPagetype ? `: ${currentPagetype}` : '';
+  const template = labels['pv_single']?.description || 'For {} page views – {}{}';
+  return template.replace('{}', pvStr).replace('{}', currentWebsite).replace('{}', pt);
+}
+
+function updateTexts() {
+  const filterEl   = document.getElementById('infog-filter-label');
+  const subtitleEl = document.getElementById('infog-subtitle');
+  const pvEl       = document.getElementById('infog-pv-label');
+  if (filterEl)   filterEl.textContent   = buildFilterLabel();
+  if (subtitleEl) subtitleEl.textContent = buildSubtitle();
+  if (pvEl)       pvEl.textContent       = buildPVLabel();
+}
+
+// ── Kártya értékek ──────────────────────────────────────────────────────────
 const BASE_SCALE = 0.57;
 const DIMS = {
   bal: {
@@ -722,80 +788,7 @@ const CARDS = {
   house:    { side:'right', icon:'cards/household.png', valueKey:'house',          labelKey:'house'    },
 };
 
-let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
 let dragged = null;
-
-// FORDÍTÁS MIATT ÁTÍRTAM EZT A FV.-T
-function buildFilterLabel() {
-  const site = currentWebsite === 'Összesítő' ? (labels['all_website']?.description || 'Összesítő') : currentWebsite;
-  const pt   = currentPagetype || (labels['all_pagetype']?.description || 'összes oldaltípus');
-  return `${site} – ${pt}`;
-}
-// function buildFilterLabel() {
-  // Felső terület: "Összesítő – összes oldaltípus" / "Alza – 01-main page"
-//  const site = currentWebsite || 'Összesítő';
-//  const pt   = currentPagetype || 'összes oldaltípus';
-//  return `${site} – ${pt}`;
-//}
-
-// EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
-function buildSubtitle() {
-  if (currentWebsite === 'Összesítő' || !currentWebsite) {
-    const n = (websites || []).filter(w => w !== 'Összesítő').length;
-    const template = labels['subtitle_multi']?.description || 'Mekkora a {} vizsgált webshop oldalainak CO2e kibocsátása?';
-    return template.replace('{}', n);
-  }
-  const template = labels['subtitle_single']?.description || 'Mekkora a(z) {} oldalainak CO2e kibocsátása?';
-  return template.replace('{}', currentWebsite);
-}
-// function buildSubtitle() {
-  // Zöld sáv: "Mekkora a(z) X webshop(ok) oldalainak CO2e kibocsátása?"
-//   if (currentWebsite === 'Összesítő' || !currentWebsite) {
-//     const n = (websites || []).filter(w => w !== 'Összesítő').length;
-//     return `Mekkora a ${n} vizsgált webshop oldalainak CO2e kibocsátása?`;
-//   }
-//   return `Mekkora a(z) ${currentWebsite} oldalainak CO2e kibocsátása?`;
-// }
-
-// EZT IS ÁTÍRTAM A FORDÍTÁS MIATT
-function buildPVLabel() {
-  const pvStr = formatPVDisplay(currentPV);
-  if (currentWebsite === 'Összesítő' || !currentWebsite) {
-    const n = (websites || []).filter(w => w !== 'Összesítő').length;
-    const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-    const template = labels['pv_multi']?.description || '{} oldalbetöltés esetén összesen – {} webshop{}';
-    return template
-      .replace('{}', pvStr)
-      .replace('{}', n)
-      .replace('{}', pt);
-  }
-  const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-  const template = labels['pv_single']?.description || '{} oldalbetöltés esetén – {}{}';
-  return template
-    .replace('{}', pvStr)
-    .replace('{}', currentWebsite)
-    .replace('{}', pt);
-}
-// function buildPVLabel() {
-  // Fekete sáv: "120 000 000 oldalbetöltés esetén összesen – 16 webshop"
-//   const pvStr = formatPVDisplay(currentPV);
-//   if (currentWebsite === 'Összesítő' || !currentWebsite) {
-//     const n = (websites || []).filter(w => w !== 'Összesítő').length;
-//     const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-//     return `${pvStr} oldalbetöltés esetén összesen – ${n} webshop${pt}`;
-//   }
-//   const pt = currentPagetype ? ` – ${currentPagetype}` : '';
-//   return `${pvStr} oldalbetöltés esetén – ${currentWebsite}${pt}`;
-// }
-
-function updateTexts() {
-  const filterEl   = document.getElementById('infog-filter-label');
-  const subtitleEl = document.getElementById('infog-subtitle');
-  const pvEl       = document.getElementById('infog-pv-label');
-  if (filterEl)   filterEl.textContent   = buildFilterLabel();
-  if (subtitleEl) subtitleEl.textContent = buildSubtitle();
-  if (pvEl)       pvEl.textContent       = buildPVLabel();
-}
 
 function getValue(cardId) {
   const key = CARDS[cardId].valueKey;
@@ -843,7 +836,6 @@ function updateValues() {
   updateTexts();
 }
 
-// ── Panel / tray render ──────────────────────────────────────────────────────
 function getState(panelId, idx, total) {
   if (total===1) return 'lent_egyedul';
   if (idx===0)   return 'lent';
@@ -868,6 +860,7 @@ function render() {
   updateValues();
   updateDragdropScale();
   setTimeout(notifyHeight, 150);
+  sendStateToParent();
 }
 
 function renderTray(elId, cards, side) {
@@ -1012,7 +1005,6 @@ function updateMiddle() {
   document.getElementById('middle').src = IMGS.ora[key];
 }
 
-// ── Export ───────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
   document.getElementById('export-msg').textContent = msg;
   document.getElementById('export-overlay').classList.add('visible');
@@ -1037,7 +1029,7 @@ function exportTimestamp() {
 }
 
 async function exportPNG() {
-  showExportOverlay('Kép mentése folyamatban...');
+  showExportOverlay('Saving image...');
   try {
     const canvas = await captureCanvas();
     const link = document.createElement('a');
@@ -1049,12 +1041,11 @@ async function exportPNG() {
 }
 
 async function exportPDF() {
-  showExportOverlay('PDF mentése folyamatban...');
+  showExportOverlay('Saving PDF...');
   try {
     const canvas = await captureCanvas();
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    // PDF mérete az infografika arányához igazítva (px → mm, 96dpi alapján)
     const pxToMm = 25.4 / 96;
     const pdfW = canvas.width  * pxToMm;
     const pdfH = canvas.height * pxToMm;
@@ -1065,11 +1056,8 @@ async function exportPDF() {
   finally { hideExportOverlay(); }
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 buildWebsiteSelector();
 buildPagetypeSelector(currentWebsite);
-
-// PV mező kezdeti értéke
 document.getElementById('pv-input').value = formatPVDisplay(currentPV);
 
 const bgImg = document.getElementById('bg-img');
