@@ -99,17 +99,22 @@ def shorten_label(text: str, max_chars: int = 32) -> str:
     return text if len(text) <= max_chars else text[:max_chars].rstrip() + "."
 
 def fit_cities(city1: str, city2: str, max_total: int = 22) -> tuple:
+    """
+    JAVÍTVA: az eredeti logika mindkét nevet egyszerre csonkíthatta feleslegesen.
+    Most a hosszabb nevet rövidítjük le arányosan, egymástól függetlenül.
+    """
     if len(city1) + len(city2) <= max_total:
         return city1, city2
-    if len(city1) >= len(city2):
-        city1 = city1[:10].rstrip() + "."
+    # A hosszabb nevet rövidítjük le, hogy a másik változatlan maradjon
+    budget = max_total - 1  # 1 karakter a "." jelnek
+    if len(city1) > len(city2):
+        city1 = city1[:budget - len(city2)].rstrip() + "."
     else:
-        city2 = city2[:10].rstrip() + "."
+        city2 = city2[:budget - len(city1)].rstrip() + "."
+    # Ha még mindig túl hosszú, mindkettőt 9 karakterre vágjuk
     if len(city1) + len(city2) > max_total:
-        if not city1.endswith("."):
-            city1 = city1[:10].rstrip() + "."
-        if not city2.endswith("."):
-            city2 = city2[:10].rstrip() + "."
+        city1 = city1[:9].rstrip() + "."
+        city2 = city2[:9].rstrip() + "."
     return city1, city2
 
 # ── Számítások ────────────────────────────────────────────────────────────────
@@ -234,7 +239,7 @@ try:
         st.error("No sheet named 'carbon_scan_output_ecomm' found in the file.")
         st.stop()
     df = xl.parse(matching[0], header=0)
-    df.columns = df.columns.str.strip()  # trailing/leading szóközök eltávolítása
+    df.columns = df.columns.str.strip()
 except Exception:
     st.error("File could not be read. Please upload a valid .xlsx file.")
     st.stop()
@@ -293,9 +298,22 @@ def safe_json(obj) -> str:
     """JSON sorosítás – backtick escape-elve hogy a JS template literál ne törjön el."""
     return json_lib.dumps(obj, ensure_ascii=False).replace("`", "\\`")
 
+# ── JAVÍTVA: nyelvválasztó session state-ben tárolja az értéket,
+#    így rerun (pl. távolságkalkulátor) után sem ugrik vissza az alapértelmezettre ──
 col_lang, _ = st.columns([1, 3])
 with col_lang:
-    selected_lang_name = st.selectbox("Infographic language:", list(LANGUAGES.keys()))
+    lang_names = list(LANGUAGES.keys())
+    default_lang_idx = lang_names.index(
+        st.session_state.get("selected_lang_name", "English")
+    )
+    selected_lang_name = st.selectbox(
+        "Infographic language:",
+        lang_names,
+        index=default_lang_idx,
+        key="lang_selectbox"
+    )
+    st.session_state["selected_lang_name"] = selected_lang_name
+
 lang_code = LANGUAGES[selected_lang_name]
 
 # Ha még nem volt geocoder számítás, az alapértelmezett városneveket
@@ -366,6 +384,7 @@ constants = {
     "KWH_PER_HOUSE": KWH_PER_HOUSE,
     "ref_km":        ref_km,
     "default_pv":    120_000_000,
+    "lang_code":     lang_code,   # JAVÍTVA: fájlnév generáláshoz átadjuk a JS-nek
 }
 
 html = html.replace("{{RAW_STATS}}",    safe_json(raw_stats))
