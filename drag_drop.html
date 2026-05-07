@@ -557,6 +557,8 @@ try {
   }
 } catch(e) {}
 
+// JAVÍTVA: a savedPanel-ből visszatöltjük a website/pagetype/pv értékeket is,
+// hogy nyelvváltás után megmaradjanak a toolbar-ban lévő választások
 let currentWebsite  = savedPanel?.website  || websites[0] || '';
 let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
 let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
@@ -570,23 +572,28 @@ if (savedPanel?.trayLeft) panelState = {
   right:     savedPanel.right,
 };
 
-// Állapot küldése Pythonnak query param-on keresztül
+// ── JAVÍTVA: debounce-olt állapotmentés, hogy drag közben ne írja
+//    folyamatosan az URL-t minden egyes render()-híváskor ──
+let _stateDebounceTimer = null;
 function sendStateToParent() {
-  try {
-    const state = {
-      trayLeft:  panelState.trayLeft,
-      trayRight: panelState.trayRight,
-      left:      panelState.left,
-      right:     panelState.right,
-      website:   currentWebsite,
-      pagetype:  currentPagetype,
-      pv:        currentPV,
-    };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-    const url = new URL(window.parent.location.href);
-    url.searchParams.set('cc_state', encoded);
-    window.parent.history.replaceState(null, '', url.toString());
-  } catch(e) {}
+  clearTimeout(_stateDebounceTimer);
+  _stateDebounceTimer = setTimeout(() => {
+    try {
+      const state = {
+        trayLeft:  panelState.trayLeft,
+        trayRight: panelState.trayRight,
+        left:      panelState.left,
+        right:     panelState.right,
+        website:   currentWebsite,
+        pagetype:  currentPagetype,
+        pv:        currentPV,
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      const url = new URL(window.parent.location.href);
+      url.searchParams.set('cc_state', encoded);
+      window.parent.history.replaceState(null, '', url.toString());
+    } catch(e) {}
+  }, 300);
 }
 
 function huFormat(val) {
@@ -632,9 +639,16 @@ function parsePV(str) {
   return (isNaN(n) || n <= 0) ? null : n;
 }
 
+// JAVÍTVA: sendStateToParent() hívása PV változáskor is,
+// hogy rerun (pl. nyelvváltás) után ne vesszen el a beírt érték
 function onPVInput(e) {
   const val = parsePV(e.target.value);
-  if (val) { currentPV = val; updateValues(); updateTexts(); }
+  if (val) {
+    currentPV = val;
+    updateValues();
+    updateTexts();
+    sendStateToParent();
+  }
 }
 
 function onPVBlur(e) {
@@ -649,6 +663,9 @@ function buildWebsiteSelector() {
     const opt = document.createElement('option');
     opt.value = w;
     opt.textContent = w === 'Összesítő' ? (labels['all_website']?.description || w) : w;
+    // JAVÍTVA: a savedPanel-ből visszatöltött currentWebsite alapján
+    // állítjuk be a selected attribútumot, így nyelvváltás után is
+    // megmarad a kiválasztott website
     if (w === currentWebsite) opt.selected = true;
     el.appendChild(opt);
   });
@@ -669,6 +686,8 @@ function buildPagetypeSelector(website) {
   const allOpt = document.createElement('option');
   allOpt.value = '';
   allOpt.textContent = labels['all_pagetype']?.description || 'All pages';
+  // JAVÍTVA: a savedPanel-ből visszatöltött currentPagetype alapján
+  // állítjuk be, így nyelvváltás után is megmarad a kiválasztott pagetype
   if (currentPagetype === '') allOpt.selected = true;
   el.appendChild(allOpt);
   pts.forEach(pt => {
@@ -684,15 +703,30 @@ function onWebsiteChange(website) {
   currentPagetype = '';
   buildPagetypeSelector(website);
   updateValues();
+  sendStateToParent();
 }
 
 function onPagetypeChange(pagetype) {
   currentPagetype = pagetype;
   updateValues();
+  sendStateToParent();
 }
 
 // ── Szöveg összerakás ────────────────────────────────────────────────────────
-// CO2 alsó indexként: "CO\u2082" unicode karakterrel, hogy textContent-tel is működjön
+
+// JAVÍTVA: tpl() segédfüggvény a template helyettesítéshez.
+// Az eredeti láncoló .replace('{}', ...) megközelítés helyett
+// ez a függvény sorrendhelyesen dolgozza fel az összes {} helykitöltőt,
+// ami fontos fordított szövegeknél (pl. japán, arab), ahol
+// a szórend megváltozhat.
+function tpl(template) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  let i = 0;
+  return template.replace(/\{\}/g, function() {
+    return (i < args.length) ? args[i++] : '';
+  });
+}
+
 function buildFilterLabel() {
   const site = currentWebsite === 'Összesítő'
     ? (labels['all_website']?.description || 'Összesítő')
@@ -706,10 +740,10 @@ function buildSubtitle() {
   if (currentWebsite === 'Összesítő' || !currentWebsite) {
     const n = (websites || []).filter(w => w !== 'Összesítő').length;
     const template = labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?';
-    return template.replace('{}', n);
+    return tpl(template, n);
   }
   const template = labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?';
-  return template.replace('{}', currentWebsite);
+  return tpl(template, currentWebsite);
 }
 
 function buildPVLabel() {
@@ -718,11 +752,11 @@ function buildPVLabel() {
     const n = (websites || []).filter(w => w !== 'Összesítő').length;
     const pt = currentPagetype ? `: ${currentPagetype}` : '';
     const template = labels['pv_multi']?.description || 'For {} page views across {} websites{}';
-    return template.replace('{}', pvStr).replace('{}', n).replace('{}', pt);
+    return tpl(template, pvStr, n, pt);
   }
   const pt = currentPagetype ? `: ${currentPagetype}` : '';
   const template = labels['pv_single']?.description || 'For {} page views – {}{}';
-  return template.replace('{}', pvStr).replace('{}', currentWebsite).replace('{}', pt);
+  return tpl(template, pvStr, currentWebsite, pt);
 }
 
 function updateTexts() {
@@ -1028,12 +1062,20 @@ function exportTimestamp() {
   return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
 }
 
+// JAVÍTVA: a fájlnévbe belekerül a nyelvkód (pl. "hu", "en", "zh_CN"),
+// hogy exportálásnál egyértelmű legyen, melyik nyelven készült az infografika.
+// A "-" karaktert "_"-re cseréljük, mert fájlnévben a kötőjel zavaró lehet.
+function exportFilename(ext) {
+  const lang = (C.lang_code || 'en').replace('-', '_');
+  return `infografika_${lang}_${exportTimestamp()}.${ext}`;
+}
+
 async function exportPNG() {
   showExportOverlay('Saving image...');
   try {
     const canvas = await captureCanvas();
     const link = document.createElement('a');
-    link.download = `infografika_${exportTimestamp()}.png`;
+    link.download = exportFilename('png');
     link.href = canvas.toDataURL('image/png');
     link.click();
   } catch(e) { alert('Export hiba: '+e.message); }
@@ -1051,7 +1093,7 @@ async function exportPDF() {
     const pdfH = canvas.height * pxToMm;
     const pdf = new jsPDF({ orientation: pdfW >= pdfH ? 'landscape' : 'portrait', unit: 'mm', format: [pdfW, pdfH] });
     pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
-    pdf.save(`infografika_${exportTimestamp()}.pdf`);
+    pdf.save(exportFilename('pdf'));
   } catch(e) { alert('PDF export hiba: '+e.message); }
   finally { hideExportOverlay(); }
 }
