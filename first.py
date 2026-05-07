@@ -467,7 +467,7 @@ if gen_btn:
         st.error(f"No data found for this selection ({stat_key}).")
     else:
         scope_lbl  = ai_website if ai_website != "Összesítő" else "All websites"
-        route_lbl  = st.session_state["ref_label"]
+        route_lbl  = f"{city1_raw} → {city2_raw}"
 
         # Iparágak szűrése a kiválasztott scope-ra
         if ai_website == "Összesítő":
@@ -488,8 +488,6 @@ if gen_btn:
                 industries  = scope_df["industry"].dropna().tolist(),
                 route_label = route_lbl,
                 out_lang    = selected_lang_name,
-                # Itt használja a Session State-ben lévő (vagy beégetett) kulcsot
-                api_key     = st.session_state.get("groq_api_key", ""), 
             )
             
         st.session_state["ai_summary"] = summary
