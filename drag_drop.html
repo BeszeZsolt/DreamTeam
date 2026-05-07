@@ -163,7 +163,6 @@ body {
 }
 
 /* ── Infografika szöveg overlay-ek ── */
-/* Felső fehér terület: 0%–13% */
 .infog-filter-label {
   position: absolute;
   pointer-events: none;
@@ -180,7 +179,6 @@ body {
   letter-spacing: 0.05em;
   z-index: 10;
 }
-/* Zöld sáv: 13%–18.5% */
 .infog-subtitle {
   position: absolute;
   pointer-events: none;
@@ -194,7 +192,6 @@ body {
   font-size: 0.95vw;
   z-index: 10;
 }
-/* Nagy fekete sáv: 44.8%–51.4% */
 .infog-pv-label {
   position: absolute;
   pointer-events: none;
@@ -376,8 +373,10 @@ body {
   font-size: 8px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   text-align: right;
-  max-width: 100px;
+  width: 100px;
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -532,23 +531,24 @@ body {
 
 <script>
 // ── Python által befecskendezett adatok ──────────────────────────────────────
-let rawStats   = {};
-let labels     = {};
-let websites   = [];
-let pagetypes  = {};
-let C          = {};
+let rawStats  = {};
+let labels    = {};
+let websites  = [];
+let pagetypes = {};
+let C         = {};
 let savedPanel = null;
 
-try { rawStats   = JSON.parse(`{{RAW_STATS}}`);    } catch(e) {}
-try { labels     = JSON.parse(`{{LABELS}}`);       } catch(e) {}
-try { websites   = JSON.parse(`{{WEBSITES}}`);     } catch(e) {}
-try { pagetypes  = JSON.parse(`{{PAGETYPES}}`);    } catch(e) {}
-try { C          = JSON.parse(`{{CONSTANTS}}`);    } catch(e) {}
-// sessionStorage-ból töltjük vissza az állapotot, de csak ha ugyanaz a
-// Streamlit session van (azonos session_id). Ha az ID változott, valódi
-// oldalbetöltés történt (F5, Ctrl+Shift+R, új tab) → töröljük az állapotot.
+try { rawStats  = JSON.parse(`{{RAW_STATS}}`);  } catch(e) {}
+try { labels    = JSON.parse(`{{LABELS}}`);     } catch(e) {}
+try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
+try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
+try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
+
+const SUMMARY_KEY = C.summary_key || 'Összesítő';
+
+// ── SessionStorage: állapot visszatöltése ─────────────────────────────────────
 try {
-  const storedSessionId = window.sessionStorage.getItem('cc_session_id');
+  const storedSessionId  = window.sessionStorage.getItem('cc_session_id');
   const currentSessionId = C.session_id || null;
   if (currentSessionId && storedSessionId === currentSessionId) {
     const raw = window.sessionStorage.getItem('cc_state');
@@ -561,10 +561,7 @@ try {
   }
 } catch(e) {}
 
-// A Python-ból kapott summary kulcs (pl. "Összesítő") – ne legyen hardkódolva JS-ben
-const SUMMARY_KEY = C.summary_key || 'Összesítő';
-
-// ── Toolbar állapot (savedPanel vagy alapértelmezett) ─────────────────────────
+// ── Toolbar állapot visszatöltése ─────────────────────────────────────────────
 let currentWebsite  = savedPanel?.website  || websites[0] || '';
 let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
 let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
@@ -585,11 +582,6 @@ if (savedPanel?.trayLeft) {
 }
 
 // ── State mentés sessionStorage-ba ───────────────────────────────────────────
-// sessionStorage: tab-onként él, refreshkor törlődik (ez a kívánt viselkedés),
-// de a Streamlit nyelvváltás miatti rerun-ját túléli.
-// saveStateNow(): azonnali mentés – dropdown és PV változáskor.
-// sendStateToParent(): debounce-olt (300ms) – drag közbeni render()-hívásokhoz.
-
 let _stateDebounceTimer = null;
 
 function buildState() {
@@ -615,7 +607,7 @@ function sendStateToParent() {
   _stateDebounceTimer = setTimeout(saveStateNow, 300);
 }
 
-// ── Számformázás ─────────────────────────────────────────────────────────────
+// ── Számformázás ──────────────────────────────────────────────────────────────
 function huFormat(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
@@ -651,6 +643,14 @@ function getCurrentCalc() {
   return calcFromRaw(raw, currentPV);
 }
 
+function isPagetypeView() {
+  return !!currentPagetype;
+}
+
+function isSummaryView() {
+  return currentWebsite === SUMMARY_KEY || !currentWebsite;
+}
+
 // ── PV input kezelés ──────────────────────────────────────────────────────────
 function formatPVDisplay(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
@@ -673,9 +673,7 @@ function onPVInput(e) {
 
 function onPVBlur(e) {
   const val = parsePV(e.target.value);
-  if (val) {
-    currentPV = val;
-  }
+  if (val) currentPV = val;
   e.target.value = formatPVDisplay(currentPV);
   saveStateNow();
 }
@@ -736,9 +734,6 @@ function onPagetypeChange(pagetype) {
 }
 
 // ── Szöveges overlay-ek ───────────────────────────────────────────────────────
-
-// Sablonhelyettesítés pozicionálisan – a {} placeholder-ek sorrendben cserélődnek.
-// Ez fontos pl. japánban vagy arabban, ahol a szórend fordított lehet.
 function tpl(template) {
   const args = Array.prototype.slice.call(arguments, 1);
   let i = 0;
@@ -746,30 +741,57 @@ function tpl(template) {
 }
 
 function buildFilterLabel() {
-  const site = currentWebsite === SUMMARY_KEY
+  const site = isSummaryView()
     ? (labels['all_website']?.description || SUMMARY_KEY)
     : currentWebsite;
   const pt  = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
-  const sep = currentPagetype ? ': ' : ' – ';
-  return `${site}${sep}${pt}`;
+  return `${site}: ${pt}`;
 }
 
 function buildSubtitle() {
   const n = (websites || []).filter(w => w !== SUMMARY_KEY).length;
-  if (currentWebsite === SUMMARY_KEY || !currentWebsite) {
-    return tpl(labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?', n);
+  if (isSummaryView()) {
+    return tpl(
+      labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of a shopping journey across {} websites?',
+      n
+    );
   }
-  return tpl(labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?', currentWebsite);
+  return tpl(
+    labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?',
+    currentWebsite
+  );
 }
 
 function buildPVLabel() {
   const pvStr = formatPVDisplay(currentPV);
   const n     = (websites || []).filter(w => w !== SUMMARY_KEY).length;
-  const pt    = currentPagetype ? `: ${currentPagetype}` : '';
-  if (currentWebsite === SUMMARY_KEY || !currentWebsite) {
-    return tpl(labels['pv_multi']?.description || 'For {} page views across {} websites{}', pvStr, n, pt);
+  const pt    = currentPagetype;
+
+  if (isSummaryView()) {
+    if (isPagetypeView()) {
+      return tpl(
+        labels['pv_multi_page']?.description || 'For {} page views across {} websites: {}',
+        pvStr, n, pt
+      );
+    } else {
+      return tpl(
+        labels['pv_multi_visit']?.description || 'For {} visits across {} websites',
+        pvStr, n
+      );
+    }
+  } else {
+    if (isPagetypeView()) {
+      return tpl(
+        labels['pv_single_page']?.description || 'For {} page views \u2013 {}: {}',
+        pvStr, currentWebsite, pt
+      );
+    } else {
+      return tpl(
+        labels['pv_single_visit']?.description || 'For {} visits \u2013 {}',
+        pvStr, currentWebsite
+      );
+    }
   }
-  return tpl(labels['pv_single']?.description || 'For {} page views \u2013 {}{}', pvStr, currentWebsite, pt);
 }
 
 function updateTexts() {
@@ -856,7 +878,7 @@ function getLabel(cardId) {
   if (!l) return '';
   if (lk === 'bp_paris') {
     const trips = getCurrentCalc()?.bp_paris_trips_count ?? '';
-    return trips ? `${trips} × ${l.route}` : l.route;
+    return trips ? `${trips} \u00d7 ${l.route}` : l.route;
   }
   return l.description || '';
 }
@@ -868,13 +890,20 @@ function updateValues() {
   document.querySelectorAll('[data-label-id]').forEach(el => {
     el.textContent = getLabel(el.dataset.labelId);
   });
+
   const calc      = getCurrentCalc();
   const redPctStr = calc?.red_pct || '0%';
   document.getElementById('middle-value').textContent = redPctStr;
-  document.getElementById('middle-label').textContent = labels['red_pct']?.description || '';
+
+  const redPctLabel = isSummaryView()
+    ? (labels['red_pct_multi']?.description  || 'AVERAGE REDUCTION POTENTIAL')
+    : (labels['red_pct_single']?.description || 'REDUCTION POTENTIAL');
+  document.getElementById('middle-label').textContent = redPctLabel;
+
   const angle  = (parseFloat(redPctStr) / 100) * 180 - 90;
   const needle = document.getElementById('needle-line');
   if (needle) needle.style.transform = `rotate(${angle}deg)`;
+
   updateTexts();
 }
 
@@ -1008,7 +1037,7 @@ function makeCard(id, context, idx, total) {
   const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
 
   const bg = document.createElement('img');
-  bg.className = 'card-bg';
+  bg.className   = 'card-bg';
   bg.crossOrigin = 'anonymous';
 
   if (context === 'tray') {
@@ -1022,9 +1051,9 @@ function makeCard(id, context, idx, total) {
     icon.crossOrigin = 'anonymous';
     card.appendChild(icon);
     const val = document.createElement('span');
-    val.className = 'card-value-tray';
+    val.className      = 'card-value-tray';
     val.dataset.cardId = id;
-    val.textContent = getValue(id);
+    val.textContent    = getValue(id);
     card.appendChild(val);
   } else {
     const st  = getState(context, idx, total);
@@ -1048,15 +1077,15 @@ function makeCard(id, context, idx, total) {
     const numRow = document.createElement('div');
     numRow.style.cssText = 'display:flex;align-items:baseline;gap:3px;';
     const numEl = document.createElement('span');
-    numEl.className = 'card-number';
+    numEl.className    = 'card-number';
     numEl.dataset.cardId = id;
-    numEl.textContent = getValue(id);
+    numEl.textContent  = getValue(id);
     numRow.appendChild(numEl);
 
     const unit = getUnit(id);
     if (unit) {
       const unitEl = document.createElement('span');
-      unitEl.className = 'card-unit';
+      unitEl.className   = 'card-unit';
       unitEl.textContent = unit;
       numRow.appendChild(unitEl);
     }
@@ -1065,9 +1094,9 @@ function makeCard(id, context, idx, total) {
     const labelText = getLabel(id);
     if (labelText) {
       const labelEl = document.createElement('span');
-      labelEl.className = 'card-label';
+      labelEl.className     = 'card-label';
       labelEl.dataset.labelId = id;
-      labelEl.textContent = labelText;
+      labelEl.textContent   = labelText;
       textBlock.appendChild(labelEl);
     }
     card.appendChild(textBlock);
@@ -1105,8 +1134,6 @@ function hideExportOverlay() {
 }
 
 async function captureCanvas() {
-  // Megvárjuk, hogy a Google Fonts ténylegesen betöltődjön, mielőtt renderelünk.
-  // Hálózati hiba esetén (pl. offline) 3 mp után továbblépünk a fallback fonttal.
   await Promise.race([
     document.fonts.ready,
     new Promise(resolve => setTimeout(resolve, 3000)),
@@ -1175,7 +1202,11 @@ buildPagetypeSelector(currentWebsite);
 document.getElementById('pv-input').value = formatPVDisplay(currentPV);
 
 const bgImg = document.getElementById('bg-img');
-if (bgImg.complete) render(); else bgImg.onload = () => render();
+const fontReady = document.fonts.ready;
+const imgReady  = new Promise(resolve => {
+  if (bgImg.complete) resolve(); else bgImg.onload = resolve;
+});
+Promise.all([fontReady, imgReady]).then(() => render());
 
 const ro = new ResizeObserver(() => { updateDragdropScale(); setTimeout(notifyHeight, 150); });
 ro.observe(document.getElementById('export-target'));
