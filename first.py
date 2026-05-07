@@ -245,6 +245,86 @@ def get_road_distance(lat1, lon1, lat2, lon2):
         pass
     return None
 
+# ── AI összefoglaló (Groq – ingyenes, hitelkártya nélkül) ─────────────────────
+ 
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL   = "llama-3.3-70b-versatile"
+ 
+def calc_full_stats(em_avg: float, red_pct: float, ref_km: float, total_pv: int = 120_000_000) -> dict:
+    """em_avg + red_pct alapján kiszámolja a teljes statisztikát az AI prompthoz."""
+    kg_co2   = em_avg * total_pv / 1000
+    kg_saved = kg_co2 * red_pct
+    kwh      = kg_saved / CO2_PER_KWH
+    return {
+        "kg_co2":         kg_co2,
+        "wash":           kg_co2   / CO2_PER_WASH,
+        "bp_paris_trips": kg_co2   / CO2_PER_KM / ref_km,
+        "red_pct":        red_pct,
+        "kg_saved":       kg_saved,
+        "kwh":            kwh,
+        "house":          kwh / KWH_PER_HOUSE,
+    }
+ 
+def generate_ai_summary(em_avg: float, red_pct: float, ref_km: float,
+                         scope_label: str, num_sites: int, num_rows: int,
+                         industries: list, route_label: str,
+                         out_lang: str, api_key: str) -> str:
+    """Groq Llama 3.3 70B-vel összefoglalót generál a jelenlegi adatokra."""
+    s = calc_full_stats(em_avg, red_pct, ref_km)
+    industry_str = ", ".join(sorted(set(str(i) for i in industries if i))[:8])
+ 
+    prompt = f"""You are a sustainability analyst writing a concise infographic report for Carbon Crane.
+Write a professional summary in {out_lang}. Use 3–4 short paragraphs of flowing prose.
+No markdown headers, no bullet points, no bold text. Just clean readable paragraphs.
+Highlight the most striking numbers, put the carbon footprint in human-scale context using the analogies,
+mention the industries covered, and end on a forward-looking note about the reduction potential.
+ 
+DATA SNAPSHOT:
+- Scope: {scope_label}
+- Websites analysed: {num_sites}
+- Data rows: {num_rows}
+- Industries: {industry_str}
+- Reference route: {route_label}
+- Total page views modelled: 120,000,000
+ 
+CARBON EMISSION (120M page views):
+- Total CO₂: {s['kg_co2']:,.0f} kg
+- Equivalent laundry loads: {s['wash']:,.0f}
+- Equivalent {route_label} road trips: {s['bp_paris_trips']:,.0f}
+ 
+REDUCTION POTENTIAL:
+- Reduction rate: {s['red_pct']*100:.1f}%
+- CO₂ saved: {s['kg_saved']:,.0f} kg
+- Energy saved: {s['kwh']:,.0f} kWh
+- Equivalent households powered: {s['house']:,.0f}
+ 
+Write only the summary paragraphs, nothing else."""
+ 
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type":  "application/json",
+    }
+    body = {
+        "model":       GROQ_MODEL,
+        "max_tokens":  700,
+        "temperature": 0.65,
+        "messages":    [{"role": "user", "content": prompt}],
+    }
+    try:
+        resp = requests.post(GROQ_API_URL, headers=headers, json=body, timeout=30)
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+    except requests.exceptions.HTTPError as e:
+        code = e.response.status_code if e.response else "?"
+        if code == 401:
+            return "❌ Invalid API key. Check your key at console.groq.com → API Keys."
+        elif code == 429:
+            return "❌ Rate limit reached. Please wait a minute and try again."
+        else:
+            return f"❌ API error ({code}): {e}"
+    except Exception as e:
+        return f"❌ Error during generation: {e}"
+ 
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane Infographic Builder")
