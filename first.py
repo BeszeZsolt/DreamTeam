@@ -485,7 +485,7 @@ components.html(html, height=660, scrolling=False)
 # ── AI összefoglaló ───────────────────────────────────────────────────────────
 
 st.divider()
-st.subheader("🤖 AI Summary Generator")
+st.subheader("🤖 Summary Generator")
 st.caption(
     "Powered by **Groq** (free, no credit card needed) · "
     "Get your free API key at [console.groq.com](https://console.groq.com) → API Keys → Create API Key"
