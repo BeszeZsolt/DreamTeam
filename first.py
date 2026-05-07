@@ -89,7 +89,7 @@ if "ref_km" not in st.session_state:
 if "ref_label" not in st.session_state:
     st.session_state["ref_label"] = "Budapest → Paris"
 if "groq_api_key" not in st.session_state:
-    st.session_state["groq_api_key"] = ""
+    st.session_state["groq_api_key"] = "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"
 if "ai_summary" not in st.session_state:
     st.session_state["ai_summary"] = None
 if "ai_summary_meta" not in st.session_state:
@@ -492,17 +492,17 @@ st.caption(
 )
 
 # API kulcs megadása – csak akkor nyitva, ha még nincs kulcs
-with st.expander("🔑 API Key", expanded=(st.session_state["groq_api_key"] == "")):
-    key_input = st.text_input(
-        "Groq API key",
-        value=st.session_state["groq_api_key"],
-        type="password",
-        placeholder="gsk_...",
-        help="Stored only for this session – never sent anywhere except Groq's API.",
-    )
-    if key_input != st.session_state["groq_api_key"]:
-        st.session_state["groq_api_key"] = key_input
-        st.session_state["ai_summary"]   = None
+#with st.expander("🔑 API Key", expanded=(st.session_state["groq_api_key"] == "")):
+ #   key_input = st.text_input(
+  #      "Groq API key",
+   #     value=st.session_state["groq_api_key"],
+    #    type="password",
+     #   placeholder="gsk_...",
+      #  help="Stored only for this session – never sent anywhere except Groq's API.",
+    #)
+    #if key_input != st.session_state["groq_api_key"]:
+     #   st.session_state["groq_api_key"] = key_input
+      #  st.session_state["ai_summary"]   = None
 
 # Szűrők – website és pagetype a már meglévő listákból
 ai_col1, ai_col2, ai_col3 = st.columns([2, 2, 1])
@@ -530,12 +530,7 @@ with ai_col3:
     gen_btn = st.button(
         "✨ Generate",
         use_container_width=True,
-        disabled=(st.session_state["groq_api_key"] == ""),
     )
-
-if st.session_state["groq_api_key"] == "":
-    st.info("👆 Add your free Groq API key above to enable AI summaries.")
-
 if gen_btn:
     # Raw stats kulcs összerakása (egyezik a build_raw_stats logikájával)
     if ai_website == "Összesítő":
