@@ -582,6 +582,8 @@ try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
 try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
 try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
 
+const AI_SUMMARY = (function() { try { return {{AI_SUMMARY_JSON}}; } catch(e) { return ""; } })();
+
 const SUMMARY_KEY = C.summary_key || 'Összesítő';
 
 // ── SessionStorage: állapot visszatöltése ─────────────────────────────────────
