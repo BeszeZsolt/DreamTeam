@@ -65,10 +65,6 @@ body {
   flex: 0 0 auto;
   min-width: unset;
 }
-.toolbar-group-lang {
-  flex: 0 0 auto;
-  min-width: unset;
-}
 .pv-input {
   background: #f5f2ec;
   color: #2d3a2d;
@@ -167,18 +163,14 @@ body {
 }
 
 /* ── Infografika szöveg overlay-ek ── */
-.infog-filter-label,
-.infog-subtitle,
-.infog-pv-label {
+/* Felső fehér terület: 0%–13% */
+.infog-filter-label {
   position: absolute;
   pointer-events: none;
   display: flex;
   align-items: center;
   overflow: hidden;
   font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
-}
-/* Felső fehér terület: 0%-13% */
-.infog-filter-label {
   top: 0; left: 7%; right: 0; height: 13%;
   justify-content: flex-start;
   color: #2d5a1b;
@@ -188,16 +180,28 @@ body {
   letter-spacing: 0.05em;
   z-index: 10;
 }
-/* Zöld sáv: 13%-18.5% */
+/* Zöld sáv: 13%–18.5% */
 .infog-subtitle {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
   top: 13%; left: 11%; right: 25%; height: 5.5%;
   color: white;
   font-weight: 600;
   font-size: 0.95vw;
   z-index: 10;
 }
-/* Nagy fekete sáv: 44.8%-51.4% */
+/* Nagy fekete sáv: 44.8%–51.4% */
 .infog-pv-label {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
   top: 44.8%; left: 8%; right: 27%; height: 6.6%;
   justify-content: flex-start;
   color: white;
@@ -226,10 +230,7 @@ body {
   transition: opacity 0.15s, transform 0.1s;
   white-space: nowrap;
 }
-.export-btn:hover {
-  opacity: 0.85;
-  transform: translateY(-1px);
-}
+.export-btn:hover  { opacity: 0.85; transform: translateY(-1px); }
 .export-btn:active { transform: translateY(0); }
 .export-btn.png { background: #5a7a5a; color: #fff; }
 .export-btn.pdf { background: #7a5a3a; color: #fff; }
@@ -477,8 +478,8 @@ body {
     <div id="export-target">
       <img class="bg-img" id="bg-img" src="cards/empty_template.png" crossorigin="anonymous"/>
       <div class="infog-filter-label" id="infog-filter-label"></div>
-      <div class="infog-subtitle" id="infog-subtitle"></div>
-      <div class="infog-pv-label" id="infog-pv-label"></div>
+      <div class="infog-subtitle"     id="infog-subtitle"></div>
+      <div class="infog-pv-label"     id="infog-pv-label"></div>
       <div class="overlay">
         <div class="dragdrop-area" id="dragdrop-area">
           <div class="panel panel-side">
@@ -530,76 +531,96 @@ body {
 </div>
 
 <script>
-const RAW_STATS_RAW   = `{{RAW_STATS}}`;
-const LABELS_RAW      = `{{LABELS}}`;
-const WEBSITES_RAW    = `{{WEBSITES}}`;
-const PAGETYPES_RAW   = `{{PAGETYPES}}`;
-const CONSTANTS_RAW   = `{{CONSTANTS}}`;
-const PANEL_STATE_RAW = `{{PANEL_STATE}}`;
-
-let rawStats  = {};
-let labels    = {};
-let websites  = [];
-let pagetypes = {};
-let C         = {};
-
-try { rawStats  = JSON.parse(RAW_STATS_RAW); }  catch(e){}
-try { labels    = JSON.parse(LABELS_RAW); }     catch(e){}
-try { websites  = JSON.parse(WEBSITES_RAW); }   catch(e){}
-try { pagetypes = JSON.parse(PAGETYPES_RAW); }  catch(e){}
-try { C         = JSON.parse(CONSTANTS_RAW); }  catch(e){}
-
-// Elmentett panel állapot visszatöltése (Pythonból jön)
+// ── Python által befecskendezett adatok ──────────────────────────────────────
+let rawStats   = {};
+let labels     = {};
+let websites   = [];
+let pagetypes  = {};
+let C          = {};
 let savedPanel = null;
+
+try { rawStats   = JSON.parse(`{{RAW_STATS}}`);    } catch(e) {}
+try { labels     = JSON.parse(`{{LABELS}}`);       } catch(e) {}
+try { websites   = JSON.parse(`{{WEBSITES}}`);     } catch(e) {}
+try { pagetypes  = JSON.parse(`{{PAGETYPES}}`);    } catch(e) {}
+try { C          = JSON.parse(`{{CONSTANTS}}`);    } catch(e) {}
+// sessionStorage-ból töltjük vissza az állapotot, de csak ha ugyanaz a
+// Streamlit session van (azonos session_id). Ha az ID változott, valódi
+// oldalbetöltés történt (F5, Ctrl+Shift+R, új tab) → töröljük az állapotot.
 try {
-  if (PANEL_STATE_RAW && PANEL_STATE_RAW !== 'null') {
-    savedPanel = JSON.parse(PANEL_STATE_RAW);
+  const storedSessionId = window.sessionStorage.getItem('cc_session_id');
+  const currentSessionId = C.session_id || null;
+  if (currentSessionId && storedSessionId === currentSessionId) {
+    const raw = window.sessionStorage.getItem('cc_state');
+    if (raw) savedPanel = JSON.parse(raw);
+  } else {
+    window.sessionStorage.removeItem('cc_state');
+    if (currentSessionId) {
+      window.sessionStorage.setItem('cc_session_id', currentSessionId);
+    }
   }
 } catch(e) {}
 
-// JAVÍTVA: a savedPanel-ből visszatöltjük a website/pagetype/pv értékeket is,
-// hogy nyelvváltás után megmaradjanak a toolbar-ban lévő választások
+// A Python-ból kapott summary kulcs (pl. "Összesítő") – ne legyen hardkódolva JS-ben
+const SUMMARY_KEY = C.summary_key || 'Összesítő';
+
+// ── Toolbar állapot (savedPanel vagy alapértelmezett) ─────────────────────────
 let currentWebsite  = savedPanel?.website  || websites[0] || '';
 let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
 let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
 
-// panelState alapértelmezett, felülírja a savedPanel ha van
-let panelState = { trayLeft:['kg_co2','wash','bp_paris'], trayRight:['kg_saved','kwh','house'], left:[], right:[] };
-if (savedPanel?.trayLeft) panelState = {
-  trayLeft:  savedPanel.trayLeft,
-  trayRight: savedPanel.trayRight,
-  left:      savedPanel.left,
-  right:     savedPanel.right,
+let panelState = {
+  trayLeft:  ['kg_co2', 'wash', 'bp_paris'],
+  trayRight: ['kg_saved', 'kwh', 'house'],
+  left:  [],
+  right: [],
 };
-
-// ── JAVÍTVA: debounce-olt állapotmentés, hogy drag közben ne írja
-//    folyamatosan az URL-t minden egyes render()-híváskor ──
-let _stateDebounceTimer = null;
-function sendStateToParent() {
-  clearTimeout(_stateDebounceTimer);
-  _stateDebounceTimer = setTimeout(() => {
-    try {
-      const state = {
-        trayLeft:  panelState.trayLeft,
-        trayRight: panelState.trayRight,
-        left:      panelState.left,
-        right:     panelState.right,
-        website:   currentWebsite,
-        pagetype:  currentPagetype,
-        pv:        currentPV,
-      };
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-      const url = new URL(window.parent.location.href);
-      url.searchParams.set('cc_state', encoded);
-      window.parent.history.replaceState(null, '', url.toString());
-    } catch(e) {}
-  }, 300);
+if (savedPanel?.trayLeft) {
+  panelState = {
+    trayLeft:  savedPanel.trayLeft,
+    trayRight: savedPanel.trayRight,
+    left:      savedPanel.left,
+    right:     savedPanel.right,
+  };
 }
 
+// ── State mentés sessionStorage-ba ───────────────────────────────────────────
+// sessionStorage: tab-onként él, refreshkor törlődik (ez a kívánt viselkedés),
+// de a Streamlit nyelvváltás miatti rerun-ját túléli.
+// saveStateNow(): azonnali mentés – dropdown és PV változáskor.
+// sendStateToParent(): debounce-olt (300ms) – drag közbeni render()-hívásokhoz.
+
+let _stateDebounceTimer = null;
+
+function buildState() {
+  return {
+    trayLeft:  panelState.trayLeft,
+    trayRight: panelState.trayRight,
+    left:      panelState.left,
+    right:     panelState.right,
+    website:   currentWebsite,
+    pagetype:  currentPagetype,
+    pv:        currentPV,
+  };
+}
+
+function saveStateNow() {
+  try {
+    window.sessionStorage.setItem('cc_state', JSON.stringify(buildState()));
+  } catch(e) {}
+}
+
+function sendStateToParent() {
+  clearTimeout(_stateDebounceTimer);
+  _stateDebounceTimer = setTimeout(saveStateNow, 300);
+}
+
+// ── Számformázás ─────────────────────────────────────────────────────────────
 function huFormat(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
 
+// ── Számítások ────────────────────────────────────────────────────────────────
 function calcFromRaw(raw, pv) {
   const kg_co2   = raw.em_avg * pv / 1000;
   const kg_saved = kg_co2 * raw.red_pct;
@@ -619,7 +640,7 @@ function calcFromRaw(raw, pv) {
 }
 
 function statsKey(website, pagetype) {
-  if (!pagetype) return website === 'Összesítő' ? 'Összesítő' : website + '|';
+  if (!pagetype) return website === SUMMARY_KEY ? SUMMARY_KEY : website + '|';
   return `${website}|${pagetype}`;
 }
 
@@ -630,6 +651,7 @@ function getCurrentCalc() {
   return calcFromRaw(raw, currentPV);
 }
 
+// ── PV input kezelés ──────────────────────────────────────────────────────────
 function formatPVDisplay(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
@@ -639,8 +661,6 @@ function parsePV(str) {
   return (isNaN(n) || n <= 0) ? null : n;
 }
 
-// JAVÍTVA: sendStateToParent() hívása PV változáskor is,
-// hogy rerun (pl. nyelvváltás) után ne vesszen el a beírt érték
 function onPVInput(e) {
   const val = parsePV(e.target.value);
   if (val) {
@@ -653,19 +673,23 @@ function onPVInput(e) {
 
 function onPVBlur(e) {
   const val = parsePV(e.target.value);
-  e.target.value = formatPVDisplay(val || currentPV);
+  if (val) {
+    currentPV = val;
+  }
+  e.target.value = formatPVDisplay(currentPV);
+  saveStateNow();
 }
 
+// ── Toolbar összerakása ────────────────────────────────────────────────────────
 function buildWebsiteSelector() {
   const el = document.getElementById('sel-website');
   el.innerHTML = '';
   websites.forEach(w => {
     const opt = document.createElement('option');
     opt.value = w;
-    opt.textContent = w === 'Összesítő' ? (labels['all_website']?.description || w) : w;
-    // JAVÍTVA: a savedPanel-ből visszatöltött currentWebsite alapján
-    // állítjuk be a selected attribútumot, így nyelvváltás után is
-    // megmarad a kiválasztott website
+    opt.textContent = w === SUMMARY_KEY
+      ? (labels['all_website']?.description || w)
+      : w;
     if (w === currentWebsite) opt.selected = true;
     el.appendChild(opt);
   });
@@ -686,13 +710,12 @@ function buildPagetypeSelector(website) {
   const allOpt = document.createElement('option');
   allOpt.value = '';
   allOpt.textContent = labels['all_pagetype']?.description || 'All pages';
-  // JAVÍTVA: a savedPanel-ből visszatöltött currentPagetype alapján
-  // állítjuk be, így nyelvváltás után is megmarad a kiválasztott pagetype
   if (currentPagetype === '') allOpt.selected = true;
   el.appendChild(allOpt);
   pts.forEach(pt => {
     const opt = document.createElement('option');
-    opt.value = pt; opt.textContent = pt;
+    opt.value = pt;
+    opt.textContent = pt;
     if (pt === currentPagetype) opt.selected = true;
     el.appendChild(opt);
   });
@@ -703,72 +726,59 @@ function onWebsiteChange(website) {
   currentPagetype = '';
   buildPagetypeSelector(website);
   updateValues();
-  sendStateToParent();
+  saveStateNow();
 }
 
 function onPagetypeChange(pagetype) {
   currentPagetype = pagetype;
   updateValues();
-  sendStateToParent();
+  saveStateNow();
 }
 
-// ── Szöveg összerakás ────────────────────────────────────────────────────────
+// ── Szöveges overlay-ek ───────────────────────────────────────────────────────
 
-// JAVÍTVA: tpl() segédfüggvény a template helyettesítéshez.
-// Az eredeti láncoló .replace('{}', ...) megközelítés helyett
-// ez a függvény sorrendhelyesen dolgozza fel az összes {} helykitöltőt,
-// ami fontos fordított szövegeknél (pl. japán, arab), ahol
-// a szórend megváltozhat.
+// Sablonhelyettesítés pozicionálisan – a {} placeholder-ek sorrendben cserélődnek.
+// Ez fontos pl. japánban vagy arabban, ahol a szórend fordított lehet.
 function tpl(template) {
   const args = Array.prototype.slice.call(arguments, 1);
   let i = 0;
-  return template.replace(/\{\}/g, function() {
-    return (i < args.length) ? args[i++] : '';
-  });
+  return template.replace(/\{\}/g, () => (i < args.length ? args[i++] : ''));
 }
 
 function buildFilterLabel() {
-  const site = currentWebsite === 'Összesítő'
-    ? (labels['all_website']?.description || 'Összesítő')
+  const site = currentWebsite === SUMMARY_KEY
+    ? (labels['all_website']?.description || SUMMARY_KEY)
     : currentWebsite;
-  const pt = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const pt  = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
   const sep = currentPagetype ? ': ' : ' – ';
   return `${site}${sep}${pt}`;
 }
 
 function buildSubtitle() {
-  if (currentWebsite === 'Összesítő' || !currentWebsite) {
-    const n = (websites || []).filter(w => w !== 'Összesítő').length;
-    const template = labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?';
-    return tpl(template, n);
+  const n = (websites || []).filter(w => w !== SUMMARY_KEY).length;
+  if (currentWebsite === SUMMARY_KEY || !currentWebsite) {
+    return tpl(labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?', n);
   }
-  const template = labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?';
-  return tpl(template, currentWebsite);
+  return tpl(labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?', currentWebsite);
 }
 
 function buildPVLabel() {
   const pvStr = formatPVDisplay(currentPV);
-  if (currentWebsite === 'Összesítő' || !currentWebsite) {
-    const n = (websites || []).filter(w => w !== 'Összesítő').length;
-    const pt = currentPagetype ? `: ${currentPagetype}` : '';
-    const template = labels['pv_multi']?.description || 'For {} page views across {} websites{}';
-    return tpl(template, pvStr, n, pt);
+  const n     = (websites || []).filter(w => w !== SUMMARY_KEY).length;
+  const pt    = currentPagetype ? `: ${currentPagetype}` : '';
+  if (currentWebsite === SUMMARY_KEY || !currentWebsite) {
+    return tpl(labels['pv_multi']?.description || 'For {} page views across {} websites{}', pvStr, n, pt);
   }
-  const pt = currentPagetype ? `: ${currentPagetype}` : '';
-  const template = labels['pv_single']?.description || 'For {} page views – {}{}';
-  return tpl(template, pvStr, currentWebsite, pt);
+  return tpl(labels['pv_single']?.description || 'For {} page views \u2013 {}{}', pvStr, currentWebsite, pt);
 }
 
 function updateTexts() {
-  const filterEl   = document.getElementById('infog-filter-label');
-  const subtitleEl = document.getElementById('infog-subtitle');
-  const pvEl       = document.getElementById('infog-pv-label');
-  if (filterEl)   filterEl.textContent   = buildFilterLabel();
-  if (subtitleEl) subtitleEl.textContent = buildSubtitle();
-  if (pvEl)       pvEl.textContent       = buildPVLabel();
+  document.getElementById('infog-filter-label').textContent = buildFilterLabel();
+  document.getElementById('infog-subtitle').textContent     = buildSubtitle();
+  document.getElementById('infog-pv-label').textContent     = buildPVLabel();
 }
 
-// ── Kártya értékek ──────────────────────────────────────────────────────────
+// ── Kártya értékek ─────────────────────────────────────────────────────────────
 const BASE_SCALE = 0.57;
 const DIMS = {
   bal: {
@@ -825,17 +835,17 @@ const CARDS = {
 let dragged = null;
 
 function getValue(cardId) {
-  const key = CARDS[cardId].valueKey;
+  const key  = CARDS[cardId].valueKey;
   const calc = getCurrentCalc();
-  const val = calc[key];
+  const val  = calc[key];
   if (val && typeof val === 'object') return val.num || '';
   return val || '';
 }
 
 function getUnit(cardId) {
-  const key = CARDS[cardId].valueKey;
+  const key  = CARDS[cardId].valueKey;
   const calc = getCurrentCalc();
-  const val = calc[key];
+  const val  = calc[key];
   if (val && typeof val === 'object') return val.unit || '';
   return '';
 }
@@ -845,8 +855,7 @@ function getLabel(cardId) {
   const l  = labels[lk];
   if (!l) return '';
   if (lk === 'bp_paris') {
-    const calc = getCurrentCalc();
-    const trips = calc?.bp_paris_trips_count ?? '';
+    const trips = getCurrentCalc()?.bp_paris_trips_count ?? '';
     return trips ? `${trips} × ${l.route}` : l.route;
   }
   return l.description || '';
@@ -859,31 +868,38 @@ function updateValues() {
   document.querySelectorAll('[data-label-id]').forEach(el => {
     el.textContent = getLabel(el.dataset.labelId);
   });
-  const calc = getCurrentCalc();
+  const calc      = getCurrentCalc();
   const redPctStr = calc?.red_pct || '0%';
   document.getElementById('middle-value').textContent = redPctStr;
   document.getElementById('middle-label').textContent = labels['red_pct']?.description || '';
-  const redPct = parseFloat(redPctStr);
-  const angle = (redPct / 100) * 180 - 90;
+  const angle  = (parseFloat(redPctStr) / 100) * 180 - 90;
   const needle = document.getElementById('needle-line');
   if (needle) needle.style.transform = `rotate(${angle}deg)`;
   updateTexts();
 }
 
+// ── Panel renderelés ──────────────────────────────────────────────────────────
 function getState(panelId, idx, total) {
-  if (total===1) return 'lent_egyedul';
-  if (idx===0)   return 'lent';
-  if (idx===total-1) return 'fent';
+  if (total === 1) return 'lent_egyedul';
+  if (idx === 0)   return 'lent';
+  if (idx === total - 1) return 'fent';
   return 'kozep';
 }
-function getSide(panelId) { return panelId==='left' ? 'bal' : 'jobb'; }
+
+function getSide(panelId) {
+  return panelId === 'left' ? 'bal' : 'jobb';
+}
+
 function getFrom(id) {
   if (panelState.trayLeft.includes(id))  return 'trayLeft';
   if (panelState.trayRight.includes(id)) return 'trayRight';
   if (panelState.left.includes(id))      return 'left';
   if (panelState.right.includes(id))     return 'right';
 }
-function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c!==id); }
+
+function removeFromState(id, from) {
+  panelState[from] = panelState[from].filter(c => c !== id);
+}
 
 function render() {
   renderTray('tray-left',  panelState.trayLeft,  'left');
@@ -900,7 +916,7 @@ function render() {
 function renderTray(elId, cards, side) {
   const el = document.getElementById(elId);
   el.innerHTML = '';
-  [0,1,2].forEach(i => {
+  [0, 1, 2].forEach(i => {
     const slot = document.createElement('div');
     slot.className = 'tray-slot' + (cards[i] ? ' has-card' : '');
     if (cards[i]) slot.appendChild(makeCard(cards[i], 'tray'));
@@ -909,20 +925,22 @@ function renderTray(elId, cards, side) {
   el.ondragover  = e => { e.preventDefault(); el.classList.add('dragover'); };
   el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
-    e.preventDefault(); el.classList.remove('dragover');
+    e.preventDefault();
+    el.classList.remove('dragover');
     if (!dragged) return;
     if (CARDS[dragged.id].side !== side) return;
-    const trayKey = `tray${side==='left'?'Left':'Right'}`;
+    const trayKey = `tray${side === 'left' ? 'Left' : 'Right'}`;
     if (panelState[trayKey].includes(dragged.id)) return;
     if (panelState[trayKey].length >= 3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[trayKey].push(dragged.id);
-    dragged = null; render();
+    dragged = null;
+    render();
   };
 }
 
 function renderPanel(panelId, cards) {
-  const el = document.getElementById(panelId);
+  const el    = document.getElementById(panelId);
   el.innerHTML = '';
   const side  = getSide(panelId);
   const total = cards.length;
@@ -947,61 +965,86 @@ function renderPanel(panelId, cards) {
     slot.ondragover  = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
     slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
     slot.ondrop = e => {
-      e.preventDefault(); e.stopPropagation(); slot.classList.remove('slot-dragover');
+      e.preventDefault();
+      e.stopPropagation();
+      slot.classList.remove('slot-dragover');
       if (!dragged) return;
       if (CARDS[dragged.id].side !== panelId) return;
       const fromPanel = dragged.from;
-      if (fromPanel===panelId) {
-        const src=[...panelState[panelId]], si=src.indexOf(dragged.id);
-        if (si===i) return;
-        src.splice(si,1); src.splice(i,0,dragged.id); panelState[panelId]=src;
+      if (fromPanel === panelId) {
+        const src = [...panelState[panelId]];
+        const si  = src.indexOf(dragged.id);
+        if (si === i) return;
+        src.splice(si, 1);
+        src.splice(i, 0, dragged.id);
+        panelState[panelId] = src;
       } else {
-        if (panelState[panelId].length>=3) return;
+        if (panelState[panelId].length >= 3) return;
         removeFromState(dragged.id, fromPanel);
-        panelState[panelId].splice(i,0,dragged.id);
+        panelState[panelId].splice(i, 0, dragged.id);
       }
-      dragged=null; render();
+      dragged = null;
+      render();
     };
     el.appendChild(slot);
   }
-  el.ondragover  = e => e.preventDefault();
+  el.ondragover = e => e.preventDefault();
   el.ondrop = e => {
     e.preventDefault();
-    if (!dragged||dragged.from===panelId) return;
-    if (CARDS[dragged.id].side!==panelId) return;
-    if (panelState[panelId].length>=3) return;
+    if (!dragged || dragged.from === panelId) return;
+    if (CARDS[dragged.id].side !== panelId) return;
+    if (panelState[panelId].length >= 3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[panelId].push(dragged.id);
-    dragged=null; render();
+    dragged = null;
+    render();
   };
 }
 
 function makeCard(id, context, idx, total) {
   const card = document.createElement('div');
-  card.className = 'card'; card.draggable = true;
-  const side = CARDS[id].side==='left' ? 'bal' : 'jobb';
-  const bg = document.createElement('img');
-  bg.className='card-bg'; bg.crossOrigin='anonymous';
+  card.className = 'card';
+  card.draggable = true;
+  const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
 
-  if (context==='tray') {
-    card.style.width='130px'; card.style.height='50px';
-    bg.src=IMGS[side].tarolo; card.appendChild(bg);
-    const icon=document.createElement('img');
-    icon.className='card-icon-tray'; icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
+  const bg = document.createElement('img');
+  bg.className = 'card-bg';
+  bg.crossOrigin = 'anonymous';
+
+  if (context === 'tray') {
+    card.style.width  = '130px';
+    card.style.height = '50px';
+    bg.src = IMGS[side].tarolo;
+    card.appendChild(bg);
+    const icon = document.createElement('img');
+    icon.className = 'card-icon-tray';
+    icon.src = CARDS[id].icon;
+    icon.crossOrigin = 'anonymous';
     card.appendChild(icon);
-    const val=document.createElement('span');
-    val.className='card-value-tray'; val.dataset.cardId=id; val.textContent=getValue(id);
+    const val = document.createElement('span');
+    val.className = 'card-value-tray';
+    val.dataset.cardId = id;
+    val.textContent = getValue(id);
     card.appendChild(val);
   } else {
-    const st=getState(context,idx,total), dim=DIMS[side][st];
-    card.style.width=`${dim.w}px`; card.style.height=`${dim.h}px`;
-    bg.src=IMGS[side][st]; card.appendChild(bg);
-    const icon=document.createElement('img');
-    icon.className = id==='house' ? 'card-icon-house' : id==='bp_paris' ? 'card-icon-car' : 'card-icon';
-    icon.src=CARDS[id].icon; icon.crossOrigin='anonymous';
+    const st  = getState(context, idx, total);
+    const dim = DIMS[side][st];
+    card.style.width  = `${dim.w}px`;
+    card.style.height = `${dim.h}px`;
+    bg.src = IMGS[side][st];
+    card.appendChild(bg);
+
+    const icon = document.createElement('img');
+    icon.className = id === 'house'    ? 'card-icon-house'
+                   : id === 'bp_paris' ? 'card-icon-car'
+                   : 'card-icon';
+    icon.src = CARDS[id].icon;
+    icon.crossOrigin = 'anonymous';
     card.appendChild(icon);
+
     const textBlock = document.createElement('div');
-    textBlock.className = 'card-text' + (context==='left' && idx===0 ? ' indent' : '');
+    textBlock.className = 'card-text' + (context === 'left' && idx === 0 ? ' indent' : '');
+
     const numRow = document.createElement('div');
     numRow.style.cssText = 'display:flex;align-items:baseline;gap:3px;';
     const numEl = document.createElement('span');
@@ -1009,6 +1052,7 @@ function makeCard(id, context, idx, total) {
     numEl.dataset.cardId = id;
     numEl.textContent = getValue(id);
     numRow.appendChild(numEl);
+
     const unit = getUnit(id);
     if (unit) {
       const unitEl = document.createElement('span');
@@ -1017,6 +1061,7 @@ function makeCard(id, context, idx, total) {
       numRow.appendChild(unitEl);
     }
     textBlock.appendChild(numRow);
+
     const labelText = getLabel(id);
     if (labelText) {
       const labelEl = document.createElement('span');
@@ -1027,18 +1072,30 @@ function makeCard(id, context, idx, total) {
     }
     card.appendChild(textBlock);
   }
-  card.ondragstart = e => { e.stopPropagation(); dragged={id, from:getFrom(id)}; setTimeout(()=>card.classList.add('dragging'),0); };
-  card.ondragend   = () => { card.classList.remove('dragging'); if (dragged){dragged=null; render();} };
+
+  card.ondragstart = e => {
+    e.stopPropagation();
+    dragged = { id, from: getFrom(id) };
+    setTimeout(() => card.classList.add('dragging'), 0);
+  };
+  card.ondragend = () => {
+    card.classList.remove('dragging');
+    if (dragged) { dragged = null; render(); }
+  };
   return card;
 }
 
 function updateMiddle() {
-  const hasL = panelState.left.length>0, hasR = panelState.right.length>0;
+  const hasL = panelState.left.length  > 0;
+  const hasR = panelState.right.length > 0;
   let key = 'egyedul';
-  if (hasL && hasR) key='mindketto'; else if (hasL) key='bal'; else if (hasR) key='jobb';
+  if (hasL && hasR)   key = 'mindketto';
+  else if (hasL)      key = 'bal';
+  else if (hasR)      key = 'jobb';
   document.getElementById('middle').src = IMGS.ora[key];
 }
 
+// ── Export ────────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
   document.getElementById('export-msg').textContent = msg;
   document.getElementById('export-overlay').classList.add('visible');
@@ -1048,25 +1105,29 @@ function hideExportOverlay() {
 }
 
 async function captureCanvas() {
+  // Megvárjuk, hogy a Google Fonts ténylegesen betöltődjön, mielőtt renderelünk.
+  // Hálózati hiba esetén (pl. offline) 3 mp után továbblépünk a fallback fonttal.
+  await Promise.race([
+    document.fonts.ready,
+    new Promise(resolve => setTimeout(resolve, 3000)),
+  ]);
   const emptySlots = document.querySelectorAll('.empty-slot');
   emptySlots.forEach(s => s.classList.add('export-hide'));
   const canvas = await html2canvas(document.getElementById('export-target'), {
-    useCORS:true, allowTaint:false, scale:4, backgroundColor:null, logging:false
+    useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
   });
   emptySlots.forEach(s => s.classList.remove('export-hide'));
   return canvas;
 }
 
 function exportTimestamp() {
-  const now = new Date();
-  return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+  const n = new Date();
+  return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`
+       + `_${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}${String(n.getSeconds()).padStart(2,'0')}`;
 }
 
-// JAVÍTVA: a fájlnévbe belekerül a nyelvkód (pl. "hu", "en", "zh_CN"),
-// hogy exportálásnál egyértelmű legyen, melyik nyelven készült az infografika.
-// A "-" karaktert "_"-re cseréljük, mert fájlnévben a kötőjel zavaró lehet.
 function exportFilename(ext) {
-  const lang = (C.lang_code || 'en').replace('-', '_');
+  const lang = (C.lang_code || 'hu').replace('-', '_');
   return `infografika_${lang}_${exportTimestamp()}.${ext}`;
 }
 
@@ -1074,30 +1135,41 @@ async function exportPNG() {
   showExportOverlay('Saving image...');
   try {
     const canvas = await captureCanvas();
-    const link = document.createElement('a');
+    const link   = document.createElement('a');
     link.download = exportFilename('png');
-    link.href = canvas.toDataURL('image/png');
+    link.href     = canvas.toDataURL('image/png');
     link.click();
-  } catch(e) { alert('Export hiba: '+e.message); }
-  finally { hideExportOverlay(); }
+  } catch(e) {
+    alert('Export error: ' + e.message);
+  } finally {
+    hideExportOverlay();
+  }
 }
 
 async function exportPDF() {
   showExportOverlay('Saving PDF...');
   try {
-    const canvas = await captureCanvas();
+    const canvas  = await captureCanvas();
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pxToMm = 25.4 / 96;
-    const pdfW = canvas.width  * pxToMm;
-    const pdfH = canvas.height * pxToMm;
-    const pdf = new jsPDF({ orientation: pdfW >= pdfH ? 'landscape' : 'portrait', unit: 'mm', format: [pdfW, pdfH] });
+    const pdfW   = canvas.width  * pxToMm;
+    const pdfH   = canvas.height * pxToMm;
+    const pdf = new jsPDF({
+      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pdfW, pdfH],
+    });
     pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
     pdf.save(exportFilename('pdf'));
-  } catch(e) { alert('PDF export hiba: '+e.message); }
-  finally { hideExportOverlay(); }
+  } catch(e) {
+    alert('PDF export error: ' + e.message);
+  } finally {
+    hideExportOverlay();
+  }
 }
 
+// ── Inicializálás ─────────────────────────────────────────────────────────────
 buildWebsiteSelector();
 buildPagetypeSelector(currentWebsite);
 document.getElementById('pv-input').value = formatPVDisplay(currentPV);
