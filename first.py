@@ -431,88 +431,88 @@ components.html(html, height=660, scrolling=False)
 # ── AI összefoglaló ───────────────────────────────────────────────────────────
 
 st.divider()
-st.subheader("Summary Generator")
-st.caption(
-    "Powered by Groq (free, no credit card needed) · "
-    "Get your free API key at [console.groq.com](https://console.groq.com) → API Keys → Create API Key"
+st.subheader("🤖 AI Summary Generator")
+st.caption("Powered by **Groq** · Generates a summary based on the currently selected infographic view.")
+
+st.write("")
+gen_btn = st.button(
+    "✨ Generate AI Summary for current view",
+    use_container_width=True,
 )
 
-ai_col1, ai_col2, ai_col3 = st.columns([2, 2, 1])
-
-with ai_col1:
-    # A legördülőben "Summary" jelenik meg, de belül SUMMARY_KEY-t használunk
-    ai_websites_display = ["Summary"] + sorted(df["website"].unique().tolist())
-    ai_website_display = st.selectbox(
-        "Website",
-        ai_websites_display,
-        key="ai_website_sel",
-    )
-    # Visszamappolás a belső SUMMARY_KEY-re
-    ai_website = SUMMARY_KEY if ai_website_display == "Summary" else ai_website_display
-
-with ai_col2:
-    available_pts = ["All pages"] + pagetypes_map.get(ai_website, [])
-    ai_pagetype = st.selectbox(
-        "Page type",
-        available_pts,
-        key="ai_pagetype_sel",
-    )
-
-with ai_col3:
-    st.write("")
-    st.write("")
-    gen_btn = st.button("Generate", use_container_width=True)
-
 if gen_btn:
-    if ai_website == SUMMARY_KEY:
-        stat_key = SUMMARY_KEY if ai_pagetype == "All pages" else f"{SUMMARY_KEY}|{ai_pagetype}"
+    # 1. Megpróbáljuk kiolvasni az infografika állapotát a session_state-ből
+    panel_state = st.session_state.get("panel_state") or {}
+    
+    # 2. Beállítjuk a változókat a HTML-ből kapott adatok alapján.
+    # Ha nincs adat (mert még nem kattintott semmire a felhasználó), az Összesítőt veszi.
+    ai_website = panel_state.get("website", "Összesítő")
+    ai_pagetype = panel_state.get("pageType", "All pages")
+
+    # 3. Raw stats kulcs összerakása (egyezik a build_raw_stats logikájával)
+    if ai_website == "Összesítő":
+        if ai_pagetype == "All pages":
+            stat_key = "Összesítő"
+        else:
+            stat_key = f"Összesítő|{ai_pagetype}"
     else:
-        stat_key = f"{ai_website}|" if ai_pagetype == "All pages" else f"{ai_website}|{ai_pagetype}"
+        if ai_pagetype == "All pages":
+            stat_key = f"{ai_website}|"
+        else:
+            stat_key = f"{ai_website}|{ai_pagetype}"
 
     raw = raw_stats.get(stat_key)
+    
     if not raw:
         st.error(f"No data found for this selection ({stat_key}).")
     else:
-        route_lbl = f"{city1_raw} \u2192 {city2_raw}"
+        scope_lbl  = ai_website if ai_website != "Összesítő" else "All websites"
+        route_lbl  = st.session_state["ref_label"]
 
-        scope_df = df if ai_website == SUMMARY_KEY else df[df["website"] == ai_website]
+        # Iparágak szűrése a kiválasztott scope-ra
+        if ai_website == "Összesítő":
+            scope_df = df
+        else:
+            scope_df = df[df["website"] == ai_website]
         if ai_pagetype != "All pages":
             scope_df = scope_df[scope_df["pageType"] == ai_pagetype]
 
-        scope_lbl = ai_website if ai_website != SUMMARY_KEY else "All websites"
-
-        with st.spinner("Generating summary..."):
+        with st.spinner("🧠 AI is generating the summary…"):
             summary = generate_ai_summary(
                 em_avg      = raw["em_avg"],
                 red_pct     = raw["red_pct"],
-                ref_km      = ref_km,
+                ref_km      = st.session_state["ref_km"],
                 scope_label = f"{scope_lbl} – {ai_pagetype}",
                 num_sites   = scope_df["website"].nunique(),
                 num_rows    = len(scope_df),
                 industries  = scope_df["industry"].dropna().tolist(),
                 route_label = route_lbl,
                 out_lang    = selected_lang_name,
+                # Itt használja a Session State-ben lévő (vagy beégetett) kulcsot
+                api_key     = st.session_state.get("groq_api_key", ""), 
             )
+            
         st.session_state["ai_summary"] = summary
         st.session_state["ai_summary_meta"] = {
-            "website":  ai_website_display,
+            "website":  ai_website,
             "pagetype": ai_pagetype,
             "lang":     selected_lang_name,
         }
 
+# Ha már van generált összefoglaló, azt megjelenítjük
 if st.session_state.get("ai_summary"):
     meta = st.session_state["ai_summary_meta"]
     st.success(
-        f"{meta.get('website', '?')} · {meta.get('pagetype', '?')} · {meta.get('lang', '?')}"
+        f"**{meta.get('website','?')}** · {meta.get('pagetype','?')} · {meta.get('lang','?')}"
     )
     st.write(st.session_state["ai_summary"])
     st.download_button(
-        label     = "Download (.txt)",
+        label     = "⬇️ Download (.txt)",
         data      = st.session_state["ai_summary"],
-        file_name = f"carbon_summary_{meta.get('website', 'all')}_{meta.get('pagetype', 'all')}.txt",
+        file_name = f"carbon_summary_{meta.get('website','all')}_{meta.get('pagetype','all')}.txt",
         mime      = "text/plain",
     )
-
+    
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
 st.divider()
