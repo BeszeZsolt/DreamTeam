@@ -6,17 +6,7 @@ import base64
 import requests
 import time
 import uuid
-import io
-from PIL import Image, ImageDraw, ImageFont
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.units import cm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
-from reportlab.lib import colors
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
-    Image as RLImage, PageBreak, Table, TableStyle,
-)
+
 from geopy.geocoders import Nominatim
 from deep_translator import GoogleTranslator
 
@@ -315,165 +305,7 @@ Write only the summary paragraphs, nothing else."""
     except Exception as e:
         return f"Error during generation: {e}"
 
-# ── Infografika PIL renderelés ────────────────────────────────────────────────
-
-def generate_infographic_image(stats: dict,
-                                template_path: str = "Carbon.Crane_infografika_template.png",
-                                layout_path:   str = "layout.json") -> Image.Image | None:
-    """PIL-alapú infografika renderelés a template PNG-re. None-t ad vissza, ha a fájl hiányzik."""
-    try:
-        with open(layout_path) as f:
-            layout = json_lib.load(f)
-        img  = Image.open(template_path).convert("RGBA")
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default(size=60)
-
-        fields = {
-            "em_max":         f"{stats.get('em_max', 0):.4f}",
-            "em_avg":         f"{stats.get('em_avg', 0):.4f}",
-            "em_min":         f"{stats.get('em_min', 0):.4f}",
-            "kg_co2":         f"{stats.get('kg_co2', 0):,.0f}",
-            "wash":           f"{stats.get('wash', 0):,.0f}",
-            "bp_paris_trips": f"{stats.get('bp_paris_trips', 0):,.0f}",
-            "red_pct":        f"{stats.get('red_pct', 0)*100:.1f}%",
-            "kg_saved":       f"{stats.get('kg_saved', 0):,.0f}",
-            "kwh":            f"{stats.get('kwh', 0):,.0f}",
-            "house":          f"{stats.get('house', 0):,.0f}",
-        }
-        for key, text in fields.items():
-            if key not in layout:
-                continue
-            box = layout[key]
-            x, y, w, h = box["x"], box["y"], box["w"], box["h"]
-            bbox = draw.textbbox((0, 0), text, font=font)
-            tx   = x + (w - (bbox[2] - bbox[0])) // 2
-            ty   = y + (h - (bbox[3] - bbox[1])) // 2
-            draw.text((tx, ty), text, font=font, fill="white")
-        return img
-    except FileNotFoundError:
-        return None
-
-# ── Kombinált PDF generálás ───────────────────────────────────────────────────
-
-GREEN      = colors.HexColor("#2d6a4f")
-LIGHT_GREEN = colors.HexColor("#d8f3dc")
-
-def build_combined_pdf(stats: dict, summary_text: str, meta: dict,
-                       route_label: str) -> bytes:
-    """Infografika kép (ha elérhető) + AI összefoglaló → egyetlen PDF."""
-    buf = io.BytesIO()
-
-    doc = SimpleDocTemplate(
-        buf,
-        pagesize=A4,
-        leftMargin=2*cm, rightMargin=2*cm,
-        topMargin=1.5*cm, bottomMargin=1.5*cm,
-        title="Carbon Crane – AI Summary Report",
-    )
-
-    base_styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        "CCTitle",
-        parent=base_styles["Heading1"],
-        fontSize=20, leading=26,
-        textColor=GREEN, spaceAfter=6,
-        alignment=TA_LEFT,
-    )
-    subtitle_style = ParagraphStyle(
-        "CCSubtitle",
-        parent=base_styles["Normal"],
-        fontSize=10, textColor=colors.HexColor("#555555"),
-        spaceAfter=14, leading=14,
-    )
-    section_style = ParagraphStyle(
-        "CCSection",
-        parent=base_styles["Heading2"],
-        fontSize=12, textColor=GREEN,
-        spaceBefore=16, spaceAfter=4,
-    )
-    body_style = ParagraphStyle(
-        "CCBody",
-        parent=base_styles["Normal"],
-        fontSize=10, leading=16,
-        spaceAfter=10, alignment=TA_LEFT,
-    )
-
-    story = []
-
-    # ── 1. oldal: infografika kép ──────────────────────────────────────────────
-    infographic = generate_infographic_image(stats)
-    if infographic is not None:
-        img_buf = io.BytesIO()
-        # RGBA → RGB (PDF nem kezeli az RGBA-t)
-        infographic.convert("RGB").save(img_buf, format="PNG")
-        img_buf.seek(0)
-        page_w = A4[0] - 4*cm   # margókkal csökkentett szélesség
-        aspect = infographic.height / infographic.width
-        story.append(RLImage(img_buf, width=page_w, height=page_w * aspect))
-        story.append(PageBreak())
-
-    # ── 2. oldal: összefoglaló ─────────────────────────────────────────────────
-    story.append(Paragraph("Carbon Crane – AI Summary Report", title_style))
-
-    scope   = meta.get("website", "All websites")
-    pt      = meta.get("pagetype", "All pages")
-    lang    = meta.get("lang", "")
-    from datetime import date
-    today   = date.today().strftime("%Y-%m-%d")
-    story.append(Paragraph(
-        f"Scope: <b>{scope}</b> · Page type: <b>{pt}</b> · Language: <b>{lang}</b> · {today}",
-        subtitle_style,
-    ))
-    story.append(HRFlowable(width="100%", thickness=1, color=GREEN, spaceAfter=12))
-
-    # ── Kulcs mutatók táblázat ─────────────────────────────────────────────────
-    story.append(Paragraph("Key Metrics", section_style))
-
-    table_data = [
-        ["Indicator", "Value"],
-        ["Total CO\u2082 (120M page views)",  f"{stats.get('kg_co2', 0):,.0f} kg"],
-        ["Equivalent laundry loads",          f"{stats.get('wash', 0):,.0f}"],
-        [f"Equivalent {route_label} trips",   f"{stats.get('bp_paris_trips', 0):,.0f}"],
-        ["Reduction potential",               f"{stats.get('red_pct', 0)*100:.1f}%"],
-        ["CO\u2082 saved",                    f"{stats.get('kg_saved', 0):,.0f} kg"],
-        ["Energy saved",                      f"{stats.get('kwh', 0):,.0f} kWh"],
-        ["Equivalent households powered",     f"{stats.get('house', 0):,.0f}"],
-    ]
-    tbl = Table(table_data, colWidths=[10*cm, 6*cm])
-    tbl.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (-1, 0),  GREEN),
-        ("TEXTCOLOR",    (0, 0), (-1, 0),  colors.white),
-        ("FONTNAME",     (0, 0), (-1, 0),  "Helvetica-Bold"),
-        ("FONTSIZE",     (0, 0), (-1, -1), 9),
-        ("BACKGROUND",   (0, 1), (-1, -1), LIGHT_GREEN),
-        ("ROWBACKGROUNDS",(0,1), (-1,-1),  [LIGHT_GREEN, colors.white]),
-        ("GRID",         (0, 0), (-1, -1), 0.5, colors.HexColor("#aaaaaa")),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING",   (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 5),
-    ]))
-    story.append(tbl)
-    story.append(Spacer(1, 0.5*cm))
-
-    # ── AI összefoglaló szöveg ─────────────────────────────────────────────────
-    story.append(Paragraph("AI-Generated Summary", section_style))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=GREEN, spaceAfter=8))
-
-    for para in summary_text.split("\n\n"):
-        para = para.strip()
-        if para:
-            story.append(Paragraph(para.replace("\n", " "), body_style))
-
-    story.append(Spacer(1, 1*cm))
-    story.append(Paragraph(
-        "Generated by Carbon Crane · Powered by Groq Llama 3.3 70B",
-        ParagraphStyle("footer", parent=base_styles["Normal"],
-                       fontSize=8, textColor=colors.grey, alignment=TA_CENTER),
-    ))
-
-    doc.build(story)
-    return buf.getvalue()
+# ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane Infographic Builder")
 
@@ -587,12 +419,14 @@ constants = {
     "session_id":    st.session_state["session_id"],
 }
 
-html = html.replace("{{RAW_STATS}}",   safe_json(raw_stats))
-html = html.replace("{{LABELS}}",      safe_json(labels))
-html = html.replace("{{WEBSITES}}",    safe_json(websites_list))
-html = html.replace("{{PAGETYPES}}",   safe_json(pagetypes_map))
-html = html.replace("{{CONSTANTS}}",   safe_json(constants))
-html = html.replace("{{PANEL_STATE}}", "null")
+html = html.replace("{{RAW_STATS}}",      safe_json(raw_stats))
+html = html.replace("{{LABELS}}",         safe_json(labels))
+html = html.replace("{{WEBSITES}}",       safe_json(websites_list))
+html = html.replace("{{PAGETYPES}}",      safe_json(pagetypes_map))
+html = html.replace("{{CONSTANTS}}",      safe_json(constants))
+html = html.replace("{{PANEL_STATE}}",    "null")
+ai_summary_text = st.session_state.get("ai_summary") or ""
+html = html.replace("{{AI_SUMMARY_JSON}}", json_lib.dumps(ai_summary_text, ensure_ascii=False))
 
 components.html(html, height=660, scrolling=False)
 
@@ -657,41 +491,22 @@ if gen_btn:
                 out_lang    = selected_lang_name,
             )
 
-        st.session_state["ai_summary"]      = summary
-        st.session_state["ai_summary_route"] = route_lbl
-        st.session_state["ai_summary_stats"] = calc_full_stats(
-            raw["em_avg"], raw["red_pct"], st.session_state["ref_km"]
-        )
+        st.session_state["ai_summary"] = summary
         st.session_state["ai_summary_meta"] = {
             "website":  ai_website,
             "pagetype": ai_pagetype,
             "lang":     selected_lang_name,
         }
+        st.rerun()
 
-# Ha már van generált összefoglaló, megjelenítjük + PDF export gomb
+# Ha már van generált összefoglaló, megjelenítjük
 if st.session_state.get("ai_summary"):
     meta = st.session_state["ai_summary_meta"]
     st.success(
         f"**{meta.get('website','?')}** · {meta.get('pagetype','?')} · {meta.get('lang','?')}"
     )
     st.write(st.session_state["ai_summary"])
-
-    with st.spinner("📄 PDF összeállítása…"):
-        pdf_bytes = build_combined_pdf(
-            stats        = st.session_state.get("ai_summary_stats", {}),
-            summary_text = st.session_state["ai_summary"],
-            meta         = meta,
-            route_label  = st.session_state.get("ai_summary_route", f"{city1_raw} → {city2_raw}"),
-        )
-
-    fname = f"carbon_crane_{meta.get('website','all')}_{meta.get('pagetype','all')}.pdf"
-    st.download_button(
-        label     = "📄 Export PDF (infografika + összefoglaló)",
-        data      = pdf_bytes,
-        file_name = fname,
-        mime      = "application/pdf",
-        use_container_width=True,
-    )
+    st.info("📄 Az összefoglaló automatikusan bekerül a PDF exportba – használd a fenti **PDF export** gombot az infografika alatt.")
     
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
