@@ -26,7 +26,6 @@ COL_EM_PAGE  = "BE - Carbon Emission - page"
 COL_RED_PAGE = "BE - Reduced Carbon Emission"
 COL_RED_ALL  = "BE - Reduced Carbon Emission - all subpages"
 
-# Belső kulcs az összesítő nézethez – nem lokalizált, csak megjelenítéskor fordítjuk
 SUMMARY_KEY = "Összesítő"
 
 REQUIRED_COLUMNS = [
@@ -111,16 +110,11 @@ def get_label(key: str, lang_code: str) -> str:
 
 # ── Session state inicializálás ───────────────────────────────────────────────
 
-if "ref_km" not in st.session_state:
-    st.session_state["ref_km"] = BP_PARIS_KM
-if "geocoded_cities" not in st.session_state:
-    st.session_state["geocoded_cities"] = None
-if "session_id" not in st.session_state:
-    st.session_state["session_id"] = uuid.uuid4().hex
-if "ai_summary" not in st.session_state:
-    st.session_state["ai_summary"] = None
-if "ai_summary_meta" not in st.session_state:
-    st.session_state["ai_summary_meta"] = {}
+if "ref_km"          not in st.session_state: st.session_state["ref_km"]          = BP_PARIS_KM
+if "geocoded_cities" not in st.session_state: st.session_state["geocoded_cities"] = None
+if "session_id"      not in st.session_state: st.session_state["session_id"]      = uuid.uuid4().hex
+if "ai_summary"      not in st.session_state: st.session_state["ai_summary"]      = None
+if "ai_summary_meta" not in st.session_state: st.session_state["ai_summary_meta"] = {}
 
 # ── Segédfüggvények ───────────────────────────────────────────────────────────
 
@@ -135,14 +129,12 @@ def truncate(text: str, max_chars: int) -> str:
 
 def fit_cities(city1: str, city2: str, max_total: int = 22) -> tuple:
     sep_len = 3
-    budget = max_total - sep_len
+    budget  = max_total - sep_len
     if len(city1) + len(city2) <= budget:
         return city1, city2
     half = budget // 2
-    if len(city1) > half:
-        city1 = truncate(city1, half - 1)
-    if len(city2) > half:
-        city2 = truncate(city2, half - 1)
+    if len(city1) > half: city1 = truncate(city1, half - 1)
+    if len(city2) > half: city2 = truncate(city2, half - 1)
     return city1, city2
 
 def get_route_cities(lang_code: str) -> tuple:
@@ -161,9 +153,9 @@ def get_route_cities(lang_code: str) -> tuple:
 # ── Számítások ────────────────────────────────────────────────────────────────
 
 def calc_raw(rows: pd.DataFrame, col_em: str, col_red: str) -> dict:
-    em_avg = rows[col_em].mean()
+    em_avg     = rows[col_em].mean()
     shop_level = rows.groupby("website")[[col_em, col_red]].first()
-    red_pct = shop_level[col_red].sum() / shop_level[col_em].sum()
+    red_pct    = shop_level[col_red].sum() / shop_level[col_em].sum()
     return {"em_avg": em_avg, "red_pct": red_pct}
 
 def build_raw_stats(df: pd.DataFrame) -> dict:
@@ -204,11 +196,8 @@ def geocode_location(place: str, language: str = "en"):
 def extract_city(location) -> str:
     raw = location.raw.get("address", {})
     return (
-        raw.get("city")
-        or raw.get("town")
-        or raw.get("village")
-        or raw.get("municipality")
-        or location.address.split(",")[0]
+        raw.get("city") or raw.get("town") or raw.get("village")
+        or raw.get("municipality") or location.address.split(",")[0]
     )
 
 @st.cache_data(show_spinner=False)
@@ -296,12 +285,9 @@ Write only the summary paragraphs, nothing else."""
         return resp.json()["choices"][0]["message"]["content"].strip()
     except requests.exceptions.HTTPError as e:
         code = e.response.status_code if e.response else "?"
-        if code == 401:
-            return "Invalid API key."
-        elif code == 429:
-            return "Rate limit reached. Please wait a minute and try again."
-        else:
-            return f"API error ({code}): {e}"
+        if code == 401: return "Invalid API key."
+        if code == 429: return "Rate limit reached. Please wait a minute and try again."
+        return f"API error ({code}): {e}"
     except Exception as e:
         return f"Error during generation: {e}"
 
@@ -419,12 +405,11 @@ constants = {
     "session_id":    st.session_state["session_id"],
 }
 
-html = html.replace("{{RAW_STATS}}",      safe_json(raw_stats))
-html = html.replace("{{LABELS}}",         safe_json(labels))
-html = html.replace("{{WEBSITES}}",       safe_json(websites_list))
-html = html.replace("{{PAGETYPES}}",      safe_json(pagetypes_map))
-html = html.replace("{{CONSTANTS}}",      safe_json(constants))
-html = html.replace("{{PANEL_STATE}}",    "null")
+html = html.replace("{{RAW_STATS}}",       safe_json(raw_stats))
+html = html.replace("{{LABELS}}",          safe_json(labels))
+html = html.replace("{{WEBSITES}}",        safe_json(websites_list))
+html = html.replace("{{PAGETYPES}}",       safe_json(pagetypes_map))
+html = html.replace("{{CONSTANTS}}",       safe_json(constants))
 ai_summary_text = st.session_state.get("ai_summary") or ""
 html = html.replace("{{AI_SUMMARY_JSON}}", json_lib.dumps(ai_summary_text, ensure_ascii=False))
 
@@ -433,81 +418,71 @@ components.html(html, height=660, scrolling=False)
 # ── AI összefoglaló ───────────────────────────────────────────────────────────
 
 st.divider()
-st.subheader("🤖 AI Summary Generator")
-st.caption("Powered by **Groq** · Generates a summary based on the currently selected infographic view.")
+st.subheader("AI Summary Generator")
+st.caption("Powered by Groq. Select the view you want to summarize, then click Generate.")
 
-st.write("")
-gen_btn = st.button(
-    "✨ Generate AI Summary for current view",
-    use_container_width=True,
-)
+col_ws, col_pt = st.columns(2)
+with col_ws:
+    ai_website = st.selectbox(
+        "Website:",
+        websites_list,
+        index=0,
+        key="ai_website_sel",
+        format_func=lambda w: get_label("all_website", lang_code) if w == SUMMARY_KEY else w,
+    )
+with col_pt:
+    pt_options = [""] + (pagetypes_map.get(ai_website) or [])
+    ai_pagetype = st.selectbox(
+        "Page type:",
+        pt_options,
+        index=0,
+        key="ai_pagetype_sel",
+        format_func=lambda p: get_label("all_pagetype", lang_code) if p == "" else p,
+    )
 
-if gen_btn:
-    # 1. Megpróbáljuk kiolvasni az infografika állapotát a session_state-ből
-    panel_state = st.session_state.get("panel_state") or {}
-    
-    # 2. Beállítjuk a változókat a HTML-ből kapott adatok alapján.
-    # Ha nincs adat (mert még nem kattintott semmire a felhasználó), az Összesítőt veszi.
-    ai_website = panel_state.get("website", "Összesítő")
-    ai_pagetype = panel_state.get("pageType", "All pages")
-
-    # 3. Raw stats kulcs összerakása (egyezik a build_raw_stats logikájával)
-    if ai_website == "Összesítő":
-        if ai_pagetype == "All pages":
-            stat_key = "Összesítő"
-        else:
-            stat_key = f"Összesítő|{ai_pagetype}"
+if st.button("Generate AI Summary", use_container_width=True):
+    if ai_website == SUMMARY_KEY:
+        stat_key = SUMMARY_KEY if ai_pagetype == "" else f"{SUMMARY_KEY}|{ai_pagetype}"
     else:
-        if ai_pagetype == "All pages":
-            stat_key = f"{ai_website}|"
-        else:
-            stat_key = f"{ai_website}|{ai_pagetype}"
+        stat_key = f"{ai_website}|" if ai_pagetype == "" else f"{ai_website}|{ai_pagetype}"
 
     raw = raw_stats.get(stat_key)
-    
     if not raw:
         st.error(f"No data found for this selection ({stat_key}).")
     else:
-        scope_lbl = ai_website if ai_website != "Összesítő" else "All websites"
-        route_lbl = f"{city1_raw} → {city2_raw}"
-
-        if ai_website == "Összesítő":
-            scope_df = df
-        else:
-            scope_df = df[df["website"] == ai_website]
-        if ai_pagetype != "All pages":
+        scope_lbl  = ai_website if ai_website != SUMMARY_KEY else "All websites"
+        pt_display = ai_pagetype if ai_pagetype else get_label("all_pagetype", lang_code)
+        route_lbl  = f"{city1_raw} \u2192 {city2_raw}"
+        scope_df   = df if ai_website == SUMMARY_KEY else df[df["website"] == ai_website]
+        if ai_pagetype:
             scope_df = scope_df[scope_df["pageType"] == ai_pagetype]
 
-        with st.spinner("🧠 AI is generating the summary…"):
+        with st.spinner("Generating summary..."):
             summary = generate_ai_summary(
                 em_avg      = raw["em_avg"],
                 red_pct     = raw["red_pct"],
                 ref_km      = st.session_state["ref_km"],
-                scope_label = f"{scope_lbl} – {ai_pagetype}",
+                scope_label = f"{scope_lbl} – {pt_display}",
                 num_sites   = scope_df["website"].nunique(),
                 num_rows    = len(scope_df),
                 industries  = scope_df["industry"].dropna().tolist(),
                 route_label = route_lbl,
                 out_lang    = selected_lang_name,
             )
-
-        st.session_state["ai_summary"] = summary
+        st.session_state["ai_summary"]      = summary
         st.session_state["ai_summary_meta"] = {
             "website":  ai_website,
-            "pagetype": ai_pagetype,
+            "pagetype": pt_display,
             "lang":     selected_lang_name,
         }
         st.rerun()
 
-# Ha már van generált összefoglaló, megjelenítjük
 if st.session_state.get("ai_summary"):
     meta = st.session_state["ai_summary_meta"]
-    st.success(
-        f"**{meta.get('website','?')}** · {meta.get('pagetype','?')} · {meta.get('lang','?')}"
-    )
+    st.success(f"**{meta.get('website','?')}** · {meta.get('pagetype','?')} · {meta.get('lang','?')}")
     st.write(st.session_state["ai_summary"])
-    st.info("📄 Az összefoglaló automatikusan bekerül a PDF exportba – használd a fenti **PDF export** gombot az infografika alatt.")
-    
+    st.info("The summary will automatically be included in the PDF export.")
+
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
 st.divider()
@@ -524,7 +499,6 @@ if st.button("Calculate distance"):
     with st.spinner("Looking up locations..."):
         g1 = geocode_location(loc1, "en")
         g2 = geocode_location(loc2, "en")
-
     if not g1:
         st.error(f"Could not find location: {loc1}")
     elif not g2:
@@ -532,40 +506,29 @@ if st.button("Calculate distance"):
     else:
         with st.spinner("Calculating route..."):
             dist_km = get_road_distance(g1.latitude, g1.longitude, g2.latitude, g2.longitude)
-
         if dist_km is None:
             st.error("Could not calculate route. There may be no road connection between the two locations.")
         else:
-            city1_en = extract_city(g1)
-            city2_en = extract_city(g2)
             st.session_state["ref_km"] = dist_km
             st.session_state["geocoded_cities"] = {
-                "loc1_raw": loc1,
-                "loc2_raw": loc2,
-                "city1_en": city1_en,
-                "city2_en": city2_en,
+                "loc1_raw": loc1, "loc2_raw": loc2,
+                "city1_en": extract_city(g1), "city2_en": extract_city(g2),
                 "lat1": g1.latitude,  "lon1": g1.longitude,
                 "lat2": g2.latitude,  "lon2": g2.longitude,
             }
             st.rerun()
 
-# ── Kalkulátor eredménye ──────────────────────────────────────────────────────
-
 if st.session_state["geocoded_cities"] is not None:
-    dist_km = st.session_state["ref_km"]
-    cities  = st.session_state["geocoded_cities"]
-
+    dist_km  = st.session_state["ref_km"]
+    cities   = st.session_state["geocoded_cities"]
     g1_local = geocode_location(cities["loc1_raw"], lang_code)
     g2_local = geocode_location(cities["loc2_raw"], lang_code)
-    addr1 = g1_local.address if g1_local else cities["city1_en"]
-    addr2 = g2_local.address if g2_local else cities["city2_en"]
-
-    bp_paris_equiv = dist_km / BP_PARIS_KM
-
+    addr1    = g1_local.address if g1_local else cities["city1_en"]
+    addr2    = g2_local.address if g2_local else cities["city2_en"]
     st.success(f"Road distance: **{dist_km:,.0f} km** – this is now the reference route!")
     st.caption(f"({addr1}  →  {addr2})")
     st.info(
-        f"The selected route is **{bp_paris_equiv:.2f}×** the Budapest–Paris "
+        f"The selected route is **{dist_km / BP_PARIS_KM:.2f}×** the Budapest–Paris "
         f"distance ({BP_PARIS_KM} km). "
         f"The infographic values have been updated to use this as the new reference route."
     )
