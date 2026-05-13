@@ -22,7 +22,7 @@ body {
   box-sizing: border-box;
 }
 
-/* Stílusos vékony scrollbar */
+/* Vékony scrollbar */
 body::-webkit-scrollbar { width: 6px; }
 body::-webkit-scrollbar-track { background: transparent; }
 body::-webkit-scrollbar-thumb { background: #c8bfa8; border-radius: 3px; }
@@ -782,7 +782,7 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
     <div class="ai-result" id="ai-result">
       <div class="ai-result-meta" id="ai-result-meta"></div>
       <div class="ai-result-text" id="ai-result-text"></div>
-      <div class="ai-result-info">The summary will automatically be included in the PDF export.</div>
+      <div class="ai-result-info">The summary will automatically be included in the PDF export. · AI-generated content may contain errors. Aways verify key figures against the infographic.</div>
     </div>
   </div>
 </div>
@@ -809,13 +809,13 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
   <div style="padding: 28px 40px 40px 40px;">
     <div id="sum-meta" style="
       color: #666;
-      font-size: 11px;
+      font-size: 13px;
       margin-bottom: 14px;
       letter-spacing: 0.01em;
     "></div>
     <div style="border-top: 1.5px solid #2d6a4f; margin-bottom: 22px;"></div>
     <div id="sum-body" style="
-      font-size: 12.5px;
+      font-size: 15px;
       line-height: 1.75;
       color: #222;
     "></div>
@@ -864,7 +864,8 @@ try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
 try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
 try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
 
-const GROQ_API_KEY = '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';
+// ── API konfiguráció ──────────────────────────────────────────────────────────
+const GROQ_API_KEY = '{{GROQ_API_KEY}}';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 const SUMMARY_KEY  = C.summary_key || 'Összesítő';
@@ -903,9 +904,9 @@ if (savedPanel?.trayLeft) {
 }
 
 // ── AI summary állapot ────────────────────────────────────────────────────────
-let aiSummaryText = '';
-let aiSummaryMeta = {};
-let summarySnapshot = null; // az állapot generáláskor
+let aiSummaryText   = '';
+let aiSummaryMeta   = {};
+let summarySnapshot = null; // az állapot pillanatképe generáláskor
 
 function getSummarySnapshot() {
   return [
@@ -965,12 +966,13 @@ function calcFromRaw(raw, pv) {
     kwh:                  { num: huFormat(kwh),      unit: 'KWH' },
     house:                { num: huFormat(kwh / C.KWH_PER_HOUSE), unit: '' },
     red_pct:              (raw.red_pct * 100).toFixed(1) + '%',
-    // nyers számok az AI prompthoz
+    // Nyers számok a prompt és az AI számára
     _kg_co2_raw:   kg_co2,
     _kg_saved_raw: kg_saved,
     _kwh_raw:      kwh,
     _red_pct_raw:  raw.red_pct,
     _bp_trips_raw: bp_trips,
+    _bp_km_raw:    bp_km,
     _wash_raw:     kg_co2 / C.CO2_PER_WASH,
     _house_raw:    kwh / C.KWH_PER_HOUSE,
   };
@@ -1052,7 +1054,6 @@ function onPagetypeChange(pagetype) {
   currentPagetype = pagetype; updateValues(); saveStateNow();
   checkStaleSummary();
 }
-
 
 // ── Szöveges overlay-ek ───────────────────────────────────────────────────────
 function tpl(template) {
@@ -1337,71 +1338,169 @@ function updateMiddle() {
 }
 
 // ── AI Summary generálás ──────────────────────────────────────────────────────
+//
+// PROMPT DESIGN NOTES:
+//   - Hangnem: az eredeti "short, punchy" Carbon Crane stílus megtartva
+//   - Struktúra: összefüggő, egymásra épülő szöveg — nem 3 elkülönülő bekezdés
+//   - Csak az infografikán ténylegesen látható kártyák adatai kerülnek a promptba
+//   - Az autós metafora csak akkor szerepel, ha a bp_paris kártya aktív
+//   - Számok en-US formázással a modellnek; megjelenítési formázás külön kezelt
+//   - temperature: 0.55 — az eredeti 0.65-nél kicsit alacsonyabb, de még élénk
+//   - max_tokens: 400 — védi a túlírástól
+//
 async function generateAISummary() {
+
+  // ── 1. Adatok és állapot összegyűjtése ──────────────────────────────────────
+
   const aiWebsite  = currentWebsite;
   const aiPagetype = currentPagetype;
   const key        = statsKey(aiWebsite, aiPagetype);
   const raw        = rawStats[key];
 
+  // UI reset
   document.getElementById('ai-error').classList.remove('visible');
   document.getElementById('ai-result').classList.remove('visible');
 
   if (!raw) {
-    document.getElementById('ai-error').textContent = `No data found for this selection (${key}).`;
+    document.getElementById('ai-error').textContent =
+      `No data found for this selection (${key}).`;
     document.getElementById('ai-error').classList.add('visible');
-    setTimeout(notifyHeight, 200);
     return;
   }
 
   const btn = document.getElementById('ai-gen-btn');
   btn.disabled = true;
   document.getElementById('ai-spinner').classList.add('visible');
-  setTimeout(notifyHeight, 200);
 
-  const calc        = calcFromRaw(raw, currentPV);
-  const scopeLabel  = aiWebsite === SUMMARY_KEY ? 'All websites' : aiWebsite;
-  // 5. fix: pagetype neve soha nem fordítódik le, az eredeti értéket használjuk
-  const ptDisplay   = aiPagetype || (labels['all_pagetype']?.description || 'All pages');
-  const ptPrompt    = aiPagetype || 'All pages'; // promptba mindig angolul
-  const routeLabel  = C.route_label || 'Budapest → Paris';
-  const outLang     = C.selected_lang_name || 'English';
-  const numSites    = aiWebsite === SUMMARY_KEY
-    ? (websites.filter(w => w !== SUMMARY_KEY).length)
+  // ── 2. Kalkulált értékek ────────────────────────────────────────────────────
+
+  const calc       = calcFromRaw(raw, currentPV);
+  const scopeLabel = aiWebsite === SUMMARY_KEY
+    ? (labels['all_website']?.description || SUMMARY_KEY)
+    : aiWebsite;
+  const ptDisplay  = aiPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const ptPrompt   = aiPagetype || 'All pages';
+  const routeLabel = C.route_label || 'Budapest → Paris'; // dinamikus, a route calculatorból
+  const ref_km     = C.ref_km     || 1485;
+  const outLang    = C.selected_lang_name || 'English';
+  const numSites   = aiWebsite === SUMMARY_KEY
+    ? websites.filter(w => w !== SUMMARY_KEY).length
     : 1;
 
-  // 1. fix: csak az infografikán ténylegesen megjelenő kártyák adatai kerülnek a promptba
+  // Számformázás a prompthoz: en-US, hogy a modell biztosan értse
+  const fmt = (n) => Math.round(n).toLocaleString('en-US');
+
+  // ── 3. Csak az infografikán ténylegesen látható kártyák ─────────────────────
+  //
+  // panelState.left  = bal panel (jelenlegi lábnyom)
+  // panelState.right = jobb panel (csökkentési potenciál)
+  // A középső óra mindig látható → gauge mindig szerepel a promptban
+  // Ha nincs aktív kártya: csak a gauge %-ról ír a modell, nem tölt
+
   const activeLeft  = panelState.left;
   const activeRight = panelState.right;
-  const activeCards = [...activeLeft, ...activeRight];
 
-  const cardLines = [];
-  if (activeCards.includes('kg_co2'))   cardLines.push(`- Total CO2 emission: ${Math.round(calc._kg_co2_raw).toLocaleString()} kg CO2e`);
-  if (activeCards.includes('wash'))     cardLines.push(`- Equivalent laundry loads: ${Math.round(calc._wash_raw).toLocaleString()}`);
-  if (activeCards.includes('bp_paris')) cardLines.push(`- Equivalent ${routeLabel} road trips: ${calc._bp_trips_raw.toLocaleString()}`);
-  if (activeCards.includes('kg_saved')) cardLines.push(`- CO2 saved with optimization: ${Math.round(calc._kg_saved_raw).toLocaleString()} kg CO2e`);
-  if (activeCards.includes('kwh'))      cardLines.push(`- Energy saved: ${Math.round(calc._kwh_raw).toLocaleString()} kWh`);
-  if (activeCards.includes('house'))    cardLines.push(`- Equivalent households powered: ${Math.round(calc._house_raw).toLocaleString()}`);
-  // A középső óra mindig látható
-  cardLines.push(`- Reduction potential: ${(calc._red_pct_raw * 100).toFixed(1)}%`);
+  // Bal panel: jelenlegi szénlábnyom
+  const currentLines = [];
+  if (activeLeft.includes('kg_co2'))
+    currentLines.push(
+      `- Total CO2 emission: ${fmt(calc._kg_co2_raw)} kg CO2e`
+    );
+  if (activeLeft.includes('wash'))
+    currentLines.push(
+      `- Equivalent laundry loads: ${fmt(calc._wash_raw)}`
+    );
+  if (activeLeft.includes('bp_paris'))
+    currentLines.push(
+      // A kártyán mindkét adat látható: km (nagy szám) + darabszám (label)
+      `- Equivalent driving distance: ${fmt(calc._bp_km_raw)} km` +
+      ` — that is ${fmt(calc._bp_trips_raw)} one-way drives (${routeLabel}, ${ref_km} km each)`
+    );
 
-  const prompt = `You are a sustainability analyst writing a concise infographic report for Carbon Crane.
-Write a professional summary in ${outLang}. Use 3-4 short paragraphs of flowing prose.
-No markdown headers, no bullet points, no bold text. Just clean readable paragraphs.
-Only reference the numbers listed below — these are exactly the metrics shown on the infographic.
-End on a forward-looking note about the reduction potential.
-IMPORTANT: Keep proper nouns untranslated — website names, page type names, and route names must appear exactly as written below, do not translate them.
+  // Jobb panel: csökkentési potenciál
+  const savingLines = [];
+  if (activeRight.includes('kg_saved'))
+    savingLines.push(
+      `- Potential CO2 saving: ${fmt(calc._kg_saved_raw)} kg CO2e`
+    );
+  if (activeRight.includes('kwh'))
+    savingLines.push(
+      `- Potential energy saving: ${fmt(calc._kwh_raw)} kWh`
+    );
+  if (activeRight.includes('house'))
+    savingLines.push(
+      `- The energy saving could power ${fmt(calc._house_raw)} average households for a full year`
+    );
 
-SCOPE:
-- Website / scope: ${scopeLabel}
-${aiPagetype ? `- Page type: ${ptPrompt}` : '- Scope covers all page types'}
-- Websites analysed: ${numSites}
-- Reference route: ${routeLabel}
-- Page views modelled: ${huFormat(currentPV)}
+  // Gauge: mindig látható
+  const reductionPct = (calc._red_pct_raw * 100).toFixed(1);
 
-METRICS SHOWN ON THE INFOGRAPHIC:
-${cardLines.join('\n')}
+  // ── 4. Scope szöveg — összesítő nézetben legyen érthető a modellnek ─────────
 
-Write only the summary paragraphs, nothing else.`;
+  const scopeContext = aiWebsite === SUMMARY_KEY
+    ? `all ${numSites} websites combined`
+    : scopeLabel;
+
+  // ── 5. Metrika blokk összerakása ────────────────────────────────────────────
+
+  const metricParts = [];
+  if (currentLines.length)
+    metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
+  if (savingLines.length)
+    metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
+  metricParts.push(`REDUCTION POTENTIAL (centre gauge, always visible):\n- ${reductionPct}% reduction potential`);
+
+  const metricsBlock = metricParts.join('\n\n');
+
+  // ── 6. Útvonal metafora — csak ha a bp_paris kártya tényleg látható ──────────
+
+  const routeRule = activeLeft.includes('bp_paris')
+    ? `- The reference route (${routeLabel}) is a distance metaphor — mention it once at most, casually`
+    : `- Do NOT mention any route, distance, driving or car trips — that data is not on the infographic`;
+
+  // ── 7. A prompt ─────────────────────────────────────────────────────────────
+  //
+  // Bekezdések száma az aktív metrikák mennyiségéhez igazodik:
+  //   - 0 aktív kártya (csak gauge): 2 mondat
+  //   - 1-2 aktív kártya: 2 bekezdés
+  //   - 3+ aktív kártya: 3 bekezdés
+
+  const totalActiveCards = activeLeft.length + activeRight.length;
+  const paragraphCount = totalActiveCards === 0 ? 1 : totalActiveCards <= 2 ? 2 : 3;
+  const lengthInstruction = totalActiveCards === 0
+    ? `3–4 sentences`
+    : totalActiveCards <= 2
+    ? `exactly ${paragraphCount} paragraph${paragraphCount > 1 ? 's' : ''}${paragraphCount > 1 ? ', building on each other' : ''}. Each paragraph should be 2–3 sentences`
+    : `exactly ${paragraphCount} paragraphs, building on each other. Each paragraph should be 3–4 sentences`;
+
+  // Ha kevés a konkrét adat, a modell kiegészítheti általános környezetvédelmi
+  // kontextussal — de csak szám nélküli, tényszerű állításokkal
+  const sustainabilityNote = totalActiveCards <= 2
+    ? `- If the data alone is too sparse to fill the text naturally, you may add 1–2 general sentences about the broader environmental significance of reducing digital carbon footprints — but these must contain no numbers, no invented facts, and no calls to action`
+    : ``;
+
+  const prompt = `You are a sustainability copywriter for Carbon Crane, a tool that measures the carbon footprint of websites — every page view consumes energy, and at scale that adds up.
+
+IMPORTANT: Write exclusively in ${outLang}.
+
+Write ${lengthInstruction}, flowing prose, no headers, no bullets, no bold. Tone: clear, direct, no dramatisation, no value judgements, no calls to action. Mention Carbon Crane once at most.
+
+Rules:
+- CRITICAL: Use only numbers listed in METRICS — do not calculate, derive, convert or invent any figure, including years and dates
+- Do not make general statements, give advice, or add context beyond what the data directly shows
+- First sentence: name the scope (${scopeContext}), page type (${aiPagetype ? ptPrompt : 'all page types'}), and scale (${fmt(currentPV)} page views)
+- Lead immediately with the most striking number
+- Each metric appears exactly once — never repeat, rephrase or revisit
+- Analogies as comparisons, not labels ("powers X households" not "the household figure")
+- End with a concrete forward-looking sentence anchored to the ${reductionPct}% reduction potential
+${sustainabilityNote}
+- Keep untranslated: ${scopeLabel}${aiPagetype ? ', ' + ptPrompt : ''}
+${routeRule}
+
+METRICS:
+${metricsBlock}`.trim();
+
+  // ── 7. API hívás ────────────────────────────────────────────────────────────
 
   try {
     const resp = await fetch(GROQ_API_URL, {
@@ -1412,9 +1511,15 @@ Write only the summary paragraphs, nothing else.`;
       },
       body: JSON.stringify({
         model:       GROQ_MODEL,
-        max_tokens:  700,
-        temperature: 0.65,
-        messages:    [{ role: 'user', content: prompt }],
+        max_tokens:  700,   // elég hely a teljes szövegnek magyarul is
+        temperature: 0.40,  // tényszerű de nem száraz
+        messages: [
+          {
+            role: 'system',
+            content: `You are a sustainability copywriter for Carbon Crane, a tool that measures the carbon footprint of websites. You write short, data-driven summaries. You never invent numbers, never generalise beyond the data, never repeat a fact, and never add advice or calls to action. You write exclusively in ${outLang}.`
+          },
+          { role: 'user', content: prompt }
+        ],
       }),
     });
 
@@ -1428,11 +1533,13 @@ Write only the summary paragraphs, nothing else.`;
     const data = await resp.json();
     const text = data.choices?.[0]?.message?.content?.trim() || '';
 
-    aiSummaryText = text;
-    aiSummaryMeta = { website: aiWebsite, pagetype: ptDisplay, lang: outLang };
-    summarySnapshot = getSummarySnapshot();
-    document.getElementById('ai-stale-warning').classList.remove('visible');
+    // ── 8. Eredmény mentése és megjelenítése ──────────────────────────────────
 
+    aiSummaryText   = text;
+    aiSummaryMeta   = { website: aiWebsite, pagetype: ptDisplay, lang: outLang };
+    summarySnapshot = getSummarySnapshot();
+
+    document.getElementById('ai-stale-warning').classList.remove('visible');
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById('ai-result-meta').textContent =
       `${scopeLabel}  ·  ${ptDisplay}  ·  ${outLang}  ·  ${today}`;
@@ -1461,23 +1568,23 @@ function hideExportOverlay() {
 
 async function captureCanvas() {
   await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
-  const emptySlots = document.querySelectorAll('.empty-slot');
-  emptySlots.forEach(s => s.classList.add('export-hide'));
-  // border-radius eltávolítása az exporthoz
+  const emptySlots   = document.querySelectorAll('.empty-slot');
   const exportTarget = document.getElementById('export-target');
-  const bgImg = document.getElementById('bg-img');
-  const prevRadius = exportTarget.style.borderRadius;
+  const bgImg        = document.getElementById('bg-img');
+  emptySlots.forEach(s => s.classList.add('export-hide'));
+  // Border-radius és outline eltávolítása exporthoz
+  const prevRadius  = exportTarget.style.borderRadius;
   const prevOutline = exportTarget.style.outline;
-  const prevBgRadius = bgImg.style.borderRadius;
+  const prevBgR     = bgImg.style.borderRadius;
   exportTarget.style.borderRadius = '0';
-  exportTarget.style.outline = 'none';
-  bgImg.style.borderRadius = '0';
+  exportTarget.style.outline      = 'none';
+  bgImg.style.borderRadius        = '0';
   const canvas = await html2canvas(exportTarget, {
     useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
   });
   exportTarget.style.borderRadius = prevRadius;
-  exportTarget.style.outline = prevOutline;
-  bgImg.style.borderRadius = prevBgRadius;
+  exportTarget.style.outline      = prevOutline;
+  bgImg.style.borderRadius        = prevBgR;
   emptySlots.forEach(s => s.classList.remove('export-hide'));
   return canvas;
 }
@@ -1551,8 +1658,10 @@ async function doExportPDF() {
 
     if (aiSummaryText && aiSummaryText.trim()) {
       const today    = new Date().toISOString().slice(0, 10);
-      const scopeTxt = aiSummaryMeta.website === SUMMARY_KEY ? 'All websites' : (aiSummaryMeta.website || 'All websites');
-      const ptTxt    = aiSummaryMeta.pagetype || 'All pages';
+      const scopeTxt = aiSummaryMeta.website === SUMMARY_KEY
+        ? 'All websites'
+        : (aiSummaryMeta.website || 'All websites');
+      const ptTxt = aiSummaryMeta.pagetype || 'All pages';
       document.getElementById('sum-meta').textContent =
         `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
       document.getElementById('sum-body').innerHTML = aiSummaryText
@@ -1567,10 +1676,9 @@ async function doExportPDF() {
         width: 794, height: sumEl.scrollHeight, windowWidth: 794,
       });
       const sumImgData = sumCanvas.toDataURL('image/png');
-      // A4 portrait: 210×297mm, kép teljes szélességre skálázva
-      const sumPageW = 210;
-      const sumPageH = 297;
-      const imgH = sumPageW * sumCanvas.height / sumCanvas.width;
+      const sumPageW   = 210;
+      const sumPageH   = 297;
+      const imgH       = sumPageW * sumCanvas.height / sumCanvas.width;
       pdf.addPage([sumPageW, sumPageH], 'portrait');
       pdf.addImage(sumImgData, 'PNG', 0, 0, sumPageW, Math.min(imgH, sumPageH));
     }
