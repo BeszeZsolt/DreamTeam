@@ -1362,6 +1362,7 @@ async function generateAISummary() {
   const scopeLabel  = aiWebsite === SUMMARY_KEY ? 'All websites' : aiWebsite;
   // 5. fix: pagetype neve soha nem fordítódik le, az eredeti értéket használjuk
   const ptDisplay   = aiPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const ptPrompt    = aiPagetype || 'All pages'; // promptba mindig angolul
   const routeLabel  = C.route_label || 'Budapest → Paris';
   const outLang     = C.selected_lang_name || 'English';
   const numSites    = aiWebsite === SUMMARY_KEY
@@ -1392,7 +1393,7 @@ IMPORTANT: Keep proper nouns untranslated — website names, page type names, an
 
 SCOPE:
 - Website / scope: ${scopeLabel}
-- Page type: ${ptDisplay}
+${aiPagetype ? `- Page type: ${ptPrompt}` : '- Scope covers all page types'}
 - Websites analysed: ${numSites}
 - Reference route: ${routeLabel}
 - Page views modelled: ${huFormat(currentPV)}
