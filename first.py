@@ -218,7 +218,7 @@ def get_road_distance(lat1, lon1, lat2, lon2):
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 
 def calc_full_stats(em_avg: float, red_pct: float, ref_km: float,
                     total_pv: int = 120_000_000) -> dict:
