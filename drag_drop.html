@@ -22,7 +22,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Vékony scrollbar */
 body::-webkit-scrollbar { width: 6px; }
 body::-webkit-scrollbar-track { background: transparent; }
 body::-webkit-scrollbar-thumb { background: #c8bfa8; border-radius: 3px; }
@@ -216,6 +215,73 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
   white-space: normal;
   z-index: 10;
 }
+
+/* ── Monitor gombok ── */
+.monitors-row {
+  position: absolute;
+  left: 4%;
+  right: 24%;
+  top: 19%;
+  height: 23%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.2%;
+  pointer-events: all;
+  z-index: 10;
+}
+.monitor-btn {
+  flex: 0 1 auto;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), filter 0.22s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  height: 100%;
+  max-width: 23%;
+}
+.monitor-btn .monitor-img {
+  height: 100%;
+  width: auto;
+  display: block;
+  pointer-events: none;
+  object-fit: contain;
+}
+.monitor-btn .monitor-label {
+  position: absolute;
+  bottom: 26%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #1a3a0a;
+  font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 0.75vw;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 88%;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(255,255,255,0.9);
+  text-align: center;
+}
+.monitor-btn.selected {
+  transform: scale(1.12) translateY(-6%);
+  filter: drop-shadow(0 6px 18px rgba(45,90,27,0.5));
+  z-index: 20;
+}
+.monitor-btn:hover:not(.selected) {
+  transform: scale(1.06) translateY(-3%);
+  filter: drop-shadow(0 3px 10px rgba(45,90,27,0.3));
+}
+/* Export során a monitor gomb ne legyen kiemelve */
+.export-hide-monitors { visibility: hidden; }
 
 .export-bar {
   display: flex;
@@ -710,6 +776,10 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
       <img class="bg-img" id="bg-img" src="cards/empty_template.png" crossorigin="anonymous"/>
       <div class="infog-filter-label" id="infog-filter-label"></div>
       <div class="infog-subtitle"     id="infog-subtitle"></div>
+
+      <!-- ── Monitor gombok sora ── -->
+      <div class="monitors-row" id="monitors-row"></div>
+
       <div class="infog-pv-label"     id="infog-pv-label"></div>
       <div class="overlay">
         <div class="dragdrop-area" id="dragdrop-area">
@@ -787,7 +857,6 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
   </div>
 </div>
 
-<!-- Rejtett AI összefoglaló oldal – html2canvas fogja renderelni -->
 <div id="summary-page" style="
   position: fixed;
   left: -9999px;
@@ -906,7 +975,7 @@ if (savedPanel?.trayLeft) {
 // ── AI summary állapot ────────────────────────────────────────────────────────
 let aiSummaryText   = '';
 let aiSummaryMeta   = {};
-let summarySnapshot = null; // az állapot pillanatképe generáláskor
+let summarySnapshot = null;
 
 function getSummarySnapshot() {
   return [
@@ -966,7 +1035,6 @@ function calcFromRaw(raw, pv) {
     kwh:                  { num: huFormat(kwh),      unit: 'KWH' },
     house:                { num: huFormat(kwh / C.KWH_PER_HOUSE), unit: '' },
     red_pct:              (raw.red_pct * 100).toFixed(1) + '%',
-    // Nyers számok a prompt és az AI számára
     _kg_co2_raw:   kg_co2,
     _kg_saved_raw: kg_saved,
     _kwh_raw:      kwh,
@@ -1047,12 +1115,115 @@ function buildPagetypeSelector(website) {
 function onWebsiteChange(website) {
   currentWebsite = website; currentPagetype = '';
   buildPagetypeSelector(website);
+  renderMonitors();
   updateValues(); saveStateNow();
   checkStaleSummary();
 }
 function onPagetypeChange(pagetype) {
-  currentPagetype = pagetype; updateValues(); saveStateNow();
+  currentPagetype = pagetype;
+  // A monitor kijelölés frissítése
+  syncMonitorSelection();
+  updateValues(); saveStateNow();
   checkStaleSummary();
+}
+
+// ── Monitor SVG template ──────────────────────────────────────────────────────
+// Az SVG tartalma a monitor1.svg fájlból inline beágyazva
+// A Python kód ezt a placeholder-t felváltja a valódi SVG tartalomra
+// ── Monitor PNG képek (first.py injektálja base64-re, mint a többi kártyát) ──
+const MONITOR_PNG_SRCS = [
+  'cards/monitor1.png',
+  'cards/monitor2.png',
+  'cards/monitor3.png',
+  'cards/monitor4.png',
+];
+
+// ── Monitor logika ────────────────────────────────────────────────────────────
+
+/**
+ * Visszaadja az aktuális website subpage-jeit (pageType-jait).
+ * Ha az aktuális view az összesítő (SUMMARY_KEY), üres tömböt ad vissza.
+ */
+function getCurrentSubpages() {
+  if (isSummaryView()) return [];
+  return pagetypes[currentWebsite] || [];
+}
+
+/**
+ * Monitor gomb kattintás kezelő.
+ * Ha az adott pagetype már ki van választva → visszaáll az összesítőre ("" pagetype).
+ * Ha nem → kiválasztja az adott pagetype-ot.
+ */
+function onMonitorClick(pagetype) {
+  if (currentPagetype === pagetype) {
+    // Másodszori kattintás: visszaáll az összesítőre
+    currentPagetype = '';
+    // Dropdown szinkronizálás
+    const sel = document.getElementById('sel-pagetype');
+    if (sel) sel.value = '';
+  } else {
+    currentPagetype = pagetype;
+    // Dropdown szinkronizálás
+    const sel = document.getElementById('sel-pagetype');
+    if (sel) sel.value = pagetype;
+  }
+  syncMonitorSelection();
+  updateValues();
+  saveStateNow();
+  checkStaleSummary();
+}
+
+/**
+ * Szinkronizálja a monitorok vizuális kijelölési állapotát.
+ */
+function syncMonitorSelection() {
+  document.querySelectorAll('.monitor-btn').forEach(btn => {
+    const pt = btn.dataset.pagetype;
+    btn.classList.toggle('selected', pt === currentPagetype && currentPagetype !== '');
+  });
+}
+
+/**
+ * Rendereli a monitor gombokat az aktuális website subpage-jei alapján.
+ */
+function renderMonitors() {
+  const row = document.getElementById('monitors-row');
+  if (!row) return;
+  row.innerHTML = '';
+
+  const subpages = getCurrentSubpages();
+
+  // Ha összesítő nézet vagy nincs subpage, a sor üres marad
+  if (subpages.length === 0) return;
+
+  // Maximum 4 monitort jelenítünk meg
+  const visible = subpages.slice(0, 4);
+
+  visible.forEach((pt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'monitor-btn' + (pt === currentPagetype ? ' selected' : '');
+    btn.dataset.pagetype = pt;
+    btn.title = pt;
+    btn.setAttribute('aria-label', pt);
+
+    // Monitor kép: cards/monitorN.svg (first.py base64-re konvertálja)
+    const img = document.createElement('img');
+    img.src = MONITOR_PNG_SRCS[idx] || MONITOR_PNG_SRCS[0];
+    img.alt = pt;
+    img.className = 'monitor-img';
+    img.crossOrigin = 'anonymous';
+    btn.appendChild(img);
+
+    // Felirat
+    const label = document.createElement('span');
+    label.className = 'monitor-label';
+    label.textContent = pt;
+    btn.appendChild(label);
+
+    btn.addEventListener('click', () => onMonitorClick(pt));
+
+    row.appendChild(btn);
+  });
 }
 
 // ── Szöveges overlay-ek ───────────────────────────────────────────────────────
@@ -1338,26 +1509,12 @@ function updateMiddle() {
 }
 
 // ── AI Summary generálás ──────────────────────────────────────────────────────
-//
-// PROMPT DESIGN NOTES:
-//   - Hangnem: az eredeti "short, punchy" Carbon Crane stílus megtartva
-//   - Struktúra: összefüggő, egymásra épülő szöveg — nem 3 elkülönülő bekezdés
-//   - Csak az infografikán ténylegesen látható kártyák adatai kerülnek a promptba
-//   - Az autós metafora csak akkor szerepel, ha a bp_paris kártya aktív
-//   - Számok en-US formázással a modellnek; megjelenítési formázás külön kezelt
-//   - temperature: 0.55 — az eredeti 0.65-nél kicsit alacsonyabb, de még élénk
-//   - max_tokens: 400 — védi a túlírástól
-//
 async function generateAISummary() {
-
-  // ── 1. Adatok és állapot összegyűjtése ──────────────────────────────────────
-
   const aiWebsite  = currentWebsite;
   const aiPagetype = currentPagetype;
   const key        = statsKey(aiWebsite, aiPagetype);
   const raw        = rawStats[key];
 
-  // UI reset
   document.getElementById('ai-error').classList.remove('visible');
   document.getElementById('ai-result').classList.remove('visible');
 
@@ -1372,98 +1529,52 @@ async function generateAISummary() {
   btn.disabled = true;
   document.getElementById('ai-spinner').classList.add('visible');
 
-  // ── 2. Kalkulált értékek ────────────────────────────────────────────────────
-
   const calc       = calcFromRaw(raw, currentPV);
   const scopeLabel = aiWebsite === SUMMARY_KEY
     ? (labels['all_website']?.description || SUMMARY_KEY)
     : aiWebsite;
   const ptDisplay  = aiPagetype || (labels['all_pagetype']?.description || 'All pages');
   const ptPrompt   = aiPagetype || 'All pages';
-  const routeLabel = C.route_label || 'Budapest → Paris'; // dinamikus, a route calculatorból
+  const routeLabel = C.route_label || 'Budapest → Paris';
   const ref_km     = C.ref_km     || 1485;
   const outLang    = C.selected_lang_name || 'English';
   const numSites   = aiWebsite === SUMMARY_KEY
     ? websites.filter(w => w !== SUMMARY_KEY).length
     : 1;
 
-  // Számformázás a prompthoz: en-US, hogy a modell biztosan értse
   const fmt = (n) => Math.round(n).toLocaleString('en-US');
-
-  // ── 3. Csak az infografikán ténylegesen látható kártyák ─────────────────────
-  //
-  // panelState.left  = bal panel (jelenlegi lábnyom)
-  // panelState.right = jobb panel (csökkentési potenciál)
-  // A középső óra mindig látható → gauge mindig szerepel a promptban
-  // Ha nincs aktív kártya: csak a gauge %-ról ír a modell, nem tölt
 
   const activeLeft  = panelState.left;
   const activeRight = panelState.right;
 
-  // Bal panel: jelenlegi szénlábnyom
   const currentLines = [];
   if (activeLeft.includes('kg_co2'))
-    currentLines.push(
-      `- Total CO2 emission: ${fmt(calc._kg_co2_raw)} kg CO2e`
-    );
+    currentLines.push(`- Total CO2 emission: ${fmt(calc._kg_co2_raw)} kg CO2e`);
   if (activeLeft.includes('wash'))
-    currentLines.push(
-      `- Equivalent laundry loads: ${fmt(calc._wash_raw)}`
-    );
+    currentLines.push(`- Equivalent laundry loads: ${fmt(calc._wash_raw)}`);
   if (activeLeft.includes('bp_paris'))
-    currentLines.push(
-      // A kártyán mindkét adat látható: km (nagy szám) + darabszám (label)
-      `- Equivalent driving distance: ${fmt(calc._bp_km_raw)} km` +
-      ` — that is ${fmt(calc._bp_trips_raw)} one-way drives (${routeLabel}, ${ref_km} km each)`
-    );
+    currentLines.push(`- Equivalent driving distance: ${fmt(calc._bp_km_raw)} km` +
+      ` — that is ${fmt(calc._bp_trips_raw)} one-way drives (${routeLabel}, ${ref_km} km each)`);
 
-  // Jobb panel: csökkentési potenciál
   const savingLines = [];
   if (activeRight.includes('kg_saved'))
-    savingLines.push(
-      `- Potential CO2 saving: ${fmt(calc._kg_saved_raw)} kg CO2e`
-    );
+    savingLines.push(`- Potential CO2 saving: ${fmt(calc._kg_saved_raw)} kg CO2e`);
   if (activeRight.includes('kwh'))
-    savingLines.push(
-      `- Potential energy saving: ${fmt(calc._kwh_raw)} kWh`
-    );
+    savingLines.push(`- Potential energy saving: ${fmt(calc._kwh_raw)} kWh`);
   if (activeRight.includes('house'))
-    savingLines.push(
-      `- The energy saving could power ${fmt(calc._house_raw)} average households for a full year`
-    );
+    savingLines.push(`- The energy saving could power ${fmt(calc._house_raw)} average households for a full year`);
 
-  // Gauge: mindig látható
   const reductionPct = (calc._red_pct_raw * 100).toFixed(1);
-
-  // ── 4. Scope szöveg — összesítő nézetben legyen érthető a modellnek ─────────
-
-  const scopeContext = aiWebsite === SUMMARY_KEY
-    ? `all ${numSites} websites combined`
-    : scopeLabel;
-
-  // ── 5. Metrika blokk összerakása ────────────────────────────────────────────
-
+  const scopeContext = aiWebsite === SUMMARY_KEY ? `all ${numSites} websites combined` : scopeLabel;
   const metricParts = [];
-  if (currentLines.length)
-    metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
-  if (savingLines.length)
-    metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
+  if (currentLines.length) metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
+  if (savingLines.length)  metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
   metricParts.push(`REDUCTION POTENTIAL (centre gauge, always visible):\n- ${reductionPct}% reduction potential`);
-
   const metricsBlock = metricParts.join('\n\n');
-
-  // ── 6. Útvonal metafora — csak ha a bp_paris kártya tényleg látható ──────────
 
   const routeRule = activeLeft.includes('bp_paris')
     ? `- The reference route (${routeLabel}) is a distance metaphor — mention it once at most, casually`
     : `- Do NOT mention any route, distance, driving or car trips — that data is not on the infographic`;
-
-  // ── 7. A prompt ─────────────────────────────────────────────────────────────
-  //
-  // Bekezdések száma az aktív metrikák mennyiségéhez igazodik:
-  //   - 0 aktív kártya (csak gauge): 2 mondat
-  //   - 1-2 aktív kártya: 2 bekezdés
-  //   - 3+ aktív kártya: 3 bekezdés
 
   const totalActiveCards = activeLeft.length + activeRight.length;
   const paragraphCount = totalActiveCards === 0 ? 1 : totalActiveCards <= 2 ? 2 : 3;
@@ -1473,8 +1584,6 @@ async function generateAISummary() {
     ? `exactly ${paragraphCount} paragraph${paragraphCount > 1 ? 's' : ''}${paragraphCount > 1 ? ', building on each other' : ''}. Each paragraph should be 2–3 sentences`
     : `exactly ${paragraphCount} paragraphs, building on each other. Each paragraph should be 3–4 sentences`;
 
-  // Ha kevés a konkrét adat, a modell kiegészítheti általános környezetvédelmi
-  // kontextussal — de csak szám nélküli, tényszerű állításokkal
   const sustainabilityNote = totalActiveCards <= 2
     ? `- If the data alone is too sparse to fill the text naturally, you may add 1–2 general sentences about the broader environmental significance of reducing digital carbon footprints — but these must contain no numbers, no invented facts, and no calls to action`
     : ``;
@@ -1500,8 +1609,6 @@ ${routeRule}
 METRICS:
 ${metricsBlock}`.trim();
 
-  // ── 7. API hívás ────────────────────────────────────────────────────────────
-
   try {
     const resp = await fetch(GROQ_API_URL, {
       method: 'POST',
@@ -1511,8 +1618,8 @@ ${metricsBlock}`.trim();
       },
       body: JSON.stringify({
         model:       GROQ_MODEL,
-        max_tokens:  700,   // elég hely a teljes szövegnek magyarul is
-        temperature: 0.40,  // tényszerű de nem száraz
+        max_tokens:  700,
+        temperature: 0.40,
         messages: [
           {
             role: 'system',
@@ -1532,8 +1639,6 @@ ${metricsBlock}`.trim();
 
     const data = await resp.json();
     const text = data.choices?.[0]?.message?.content?.trim() || '';
-
-    // ── 8. Eredmény mentése és megjelenítése ──────────────────────────────────
 
     aiSummaryText   = text;
     aiSummaryMeta   = { website: aiWebsite, pagetype: ptDisplay, lang: outLang };
@@ -1572,7 +1677,6 @@ async function captureCanvas() {
   const exportTarget = document.getElementById('export-target');
   const bgImg        = document.getElementById('bg-img');
   emptySlots.forEach(s => s.classList.add('export-hide'));
-  // Border-radius és outline eltávolítása exporthoz
   const prevRadius  = exportTarget.style.borderRadius;
   const prevOutline = exportTarget.style.outline;
   const prevBgR     = bgImg.style.borderRadius;
@@ -1715,7 +1819,10 @@ document.getElementById('pv-input').value = formatPVDisplay(currentPV);
 const bgImg    = document.getElementById('bg-img');
 const fontReady = document.fonts.ready;
 const imgReady  = new Promise(resolve => { if (bgImg.complete) resolve(); else bgImg.onload = resolve; });
-Promise.all([fontReady, imgReady]).then(() => render());
+Promise.all([fontReady, imgReady]).then(() => {
+  render();
+  renderMonitors();
+});
 
 const ro = new ResizeObserver(() => { updateDragdropScale(); setTimeout(notifyHeight, 150); });
 ro.observe(document.getElementById('export-target'));
