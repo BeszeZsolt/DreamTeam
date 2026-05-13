@@ -290,9 +290,10 @@ pagetypes_map = build_pagetypes_map(df)
 websites_list = [SUMMARY_KEY] + sorted(df["website"].unique().tolist())
 ref_km        = st.session_state["ref_km"]
 
-# ── Groq API kulcs (ideiglenesen hard-coded) ─────────────────────────────────
-# TODO: környezeti változóba kell mozgatni
-groq_api_key = "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"
+# ── Groq API kulcs — secrets.toml-ból olvasva ────────────────────────────────
+# Helyileg: .streamlit/secrets.toml → GROQ_API_KEY = "gsk_..."
+# Streamlit Cloud-on: Settings → Secrets menüben kell megadni
+groq_api_key = st.secrets["GROQ_API_KEY"]
 
 def safe_json(obj) -> str:
     return json_lib.dumps(obj, ensure_ascii=False).replace("`", "\\`")
