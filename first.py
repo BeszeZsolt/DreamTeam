@@ -6,7 +6,6 @@ import base64
 import requests
 import time
 import uuid
-
 from geopy.geocoders import Nominatim
 from deep_translator import GoogleTranslator
 
@@ -15,11 +14,11 @@ st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
 # ── Statikus konstansok ───────────────────────────────────────────────────────
 
-CO2_PER_WASH  = 0.236615995   # 1 mosás CO2e [kg]
-CO2_PER_KM    = 0.215118375   # 1 km autóút CO2e [kg]
-CO2_PER_KWH   = 0.236150771   # 1 kWh áram CO2e [kg]
-KWH_PER_HOUSE = 2500          # 1 háztartás éves áramfogyasztása [kWh]
-BP_PARIS_KM   = 1485          # Budapest → Párizs alapértelmezett távolság [km]
+CO2_PER_WASH  = 0.236615995
+CO2_PER_KM    = 0.215118375
+CO2_PER_KWH   = 0.236150771
+KWH_PER_HOUSE = 2500
+BP_PARIS_KM   = 1485
 
 COL_EM_ALL   = "BE - Carbon Emission - all subpages"
 COL_EM_PAGE  = "BE - Carbon Emission - page"
@@ -113,8 +112,6 @@ def get_label(key: str, lang_code: str) -> str:
 if "ref_km"          not in st.session_state: st.session_state["ref_km"]          = BP_PARIS_KM
 if "geocoded_cities" not in st.session_state: st.session_state["geocoded_cities"] = None
 if "session_id"      not in st.session_state: st.session_state["session_id"]      = uuid.uuid4().hex
-if "ai_summary"      not in st.session_state: st.session_state["ai_summary"]      = None
-if "ai_summary_meta" not in st.session_state: st.session_state["ai_summary_meta"] = {}
 
 # ── Segédfüggvények ───────────────────────────────────────────────────────────
 
@@ -214,83 +211,6 @@ def get_road_distance(lat1, lon1, lat2, lon2):
         pass
     return None
 
-# ── AI összefoglaló (Groq) ────────────────────────────────────────────────────
-
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL   = "llama-3.3-70b-versatile"
-GROQ_API_KEY = "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"
-
-def calc_full_stats(em_avg: float, red_pct: float, ref_km: float,
-                    total_pv: int = 120_000_000) -> dict:
-    kg_co2   = em_avg * total_pv / 1000
-    kg_saved = kg_co2 * red_pct
-    kwh      = kg_saved / CO2_PER_KWH
-    return {
-        "kg_co2":         kg_co2,
-        "wash":           kg_co2   / CO2_PER_WASH,
-        "bp_paris_trips": kg_co2   / CO2_PER_KM / ref_km,
-        "red_pct":        red_pct,
-        "kg_saved":       kg_saved,
-        "kwh":            kwh,
-        "house":          kwh / KWH_PER_HOUSE,
-    }
-
-def generate_ai_summary(em_avg: float, red_pct: float, ref_km: float,
-                         scope_label: str, num_sites: int, num_rows: int,
-                         industries: list, route_label: str,
-                         out_lang: str) -> str:
-    s = calc_full_stats(em_avg, red_pct, ref_km)
-    industry_str = ", ".join(sorted(set(str(i) for i in industries if i))[:8])
-
-    prompt = f"""You are a sustainability analyst writing a concise infographic report for Carbon Crane.
-Write a professional summary in {out_lang}. Use 3-4 short paragraphs of flowing prose.
-No markdown headers, no bullet points, no bold text. Just clean readable paragraphs.
-Highlight the most striking numbers, put the carbon footprint in human-scale context using the analogies,
-mention the industries covered, and end on a forward-looking note about the reduction potential.
-
-DATA SNAPSHOT:
-- Scope: {scope_label}
-- Websites analysed: {num_sites}
-- Data rows: {num_rows}
-- Industries: {industry_str}
-- Reference route: {route_label}
-- Total page views modelled: 120,000,000
-
-CARBON EMISSION (120M page views):
-- Total CO2: {s['kg_co2']:,.0f} kg
-- Equivalent laundry loads: {s['wash']:,.0f}
-- Equivalent {route_label} road trips: {s['bp_paris_trips']:,.0f}
-
-REDUCTION POTENTIAL:
-- Reduction rate: {s['red_pct']*100:.1f}%
-- CO2 saved: {s['kg_saved']:,.0f} kg
-- Energy saved: {s['kwh']:,.0f} kWh
-- Equivalent households powered: {s['house']:,.0f}
-
-Write only the summary paragraphs, nothing else."""
-
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type":  "application/json",
-    }
-    body = {
-        "model":       GROQ_MODEL,
-        "max_tokens":  700,
-        "temperature": 0.65,
-        "messages":    [{"role": "user", "content": prompt}],
-    }
-    try:
-        resp = requests.post(GROQ_API_URL, headers=headers, json=body, timeout=30)
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"].strip()
-    except requests.exceptions.HTTPError as e:
-        code = e.response.status_code if e.response else "?"
-        if code == 401: return "Invalid API key."
-        if code == 429: return "Rate limit reached. Please wait a minute and try again."
-        return f"API error ({code}): {e}"
-    except Exception as e:
-        return f"Error during generation: {e}"
-
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane Infographic Builder")
@@ -370,6 +290,9 @@ pagetypes_map = build_pagetypes_map(df)
 websites_list = [SUMMARY_KEY] + sorted(df["website"].unique().tolist())
 ref_km        = st.session_state["ref_km"]
 
+# ── Groq API kulcs (ideiglenesen hard-coded) ─────────────────────────────────
+groq_api_key = "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"
+
 def safe_json(obj) -> str:
     return json_lib.dumps(obj, ensure_ascii=False).replace("`", "\\`")
 
@@ -394,94 +317,28 @@ labels = {
 }
 
 constants = {
-    "CO2_PER_WASH":  CO2_PER_WASH,
-    "CO2_PER_KM":    CO2_PER_KM,
-    "CO2_PER_KWH":   CO2_PER_KWH,
-    "KWH_PER_HOUSE": KWH_PER_HOUSE,
-    "ref_km":        ref_km,
-    "default_pv":    120_000_000,
-    "lang_code":     lang_code,
-    "summary_key":   SUMMARY_KEY,
-    "session_id":    st.session_state["session_id"],
+    "CO2_PER_WASH":       CO2_PER_WASH,
+    "CO2_PER_KM":         CO2_PER_KM,
+    "CO2_PER_KWH":        CO2_PER_KWH,
+    "KWH_PER_HOUSE":      KWH_PER_HOUSE,
+    "ref_km":             ref_km,
+    "default_pv":         120_000_000,
+    "lang_code":          lang_code,
+    "summary_key":        SUMMARY_KEY,
+    "session_id":         st.session_state["session_id"],
+    # AI summary-hoz szükséges extra konstansok
+    "selected_lang_name": selected_lang_name,
+    "route_label":        f"{city1_raw} \u2192 {city2_raw}",
 }
 
-html = html.replace("{{RAW_STATS}}",       safe_json(raw_stats))
-html = html.replace("{{LABELS}}",          safe_json(labels))
-html = html.replace("{{WEBSITES}}",        safe_json(websites_list))
-html = html.replace("{{PAGETYPES}}",       safe_json(pagetypes_map))
-html = html.replace("{{CONSTANTS}}",       safe_json(constants))
-ai_summary_text = st.session_state.get("ai_summary") or ""
-html = html.replace("{{AI_SUMMARY_JSON}}", json_lib.dumps(ai_summary_text, ensure_ascii=False))
+html = html.replace("{{RAW_STATS}}",    safe_json(raw_stats))
+html = html.replace("{{LABELS}}",       safe_json(labels))
+html = html.replace("{{WEBSITES}}",     safe_json(websites_list))
+html = html.replace("{{PAGETYPES}}",    safe_json(pagetypes_map))
+html = html.replace("{{CONSTANTS}}",    safe_json(constants))
+html = html.replace("{{GROQ_API_KEY}}", groq_api_key)
 
-components.html(html, height=660, scrolling=False)
-
-# ── AI összefoglaló ───────────────────────────────────────────────────────────
-
-st.divider()
-st.subheader("AI Summary Generator")
-st.caption("Powered by Groq. Select the view you want to summarize, then click Generate.")
-
-col_ws, col_pt = st.columns(2)
-with col_ws:
-    ai_website = st.selectbox(
-        "Website:",
-        websites_list,
-        index=0,
-        key="ai_website_sel",
-        format_func=lambda w: get_label("all_website", lang_code) if w == SUMMARY_KEY else w,
-    )
-with col_pt:
-    pt_options = [""] + (pagetypes_map.get(ai_website) or [])
-    ai_pagetype = st.selectbox(
-        "Page type:",
-        pt_options,
-        index=0,
-        key="ai_pagetype_sel",
-        format_func=lambda p: get_label("all_pagetype", lang_code) if p == "" else p,
-    )
-
-if st.button("Generate AI Summary", use_container_width=True):
-    if ai_website == SUMMARY_KEY:
-        stat_key = SUMMARY_KEY if ai_pagetype == "" else f"{SUMMARY_KEY}|{ai_pagetype}"
-    else:
-        stat_key = f"{ai_website}|" if ai_pagetype == "" else f"{ai_website}|{ai_pagetype}"
-
-    raw = raw_stats.get(stat_key)
-    if not raw:
-        st.error(f"No data found for this selection ({stat_key}).")
-    else:
-        scope_lbl  = ai_website if ai_website != SUMMARY_KEY else "All websites"
-        pt_display = ai_pagetype if ai_pagetype else get_label("all_pagetype", lang_code)
-        route_lbl  = f"{city1_raw} \u2192 {city2_raw}"
-        scope_df   = df if ai_website == SUMMARY_KEY else df[df["website"] == ai_website]
-        if ai_pagetype:
-            scope_df = scope_df[scope_df["pageType"] == ai_pagetype]
-
-        with st.spinner("Generating summary..."):
-            summary = generate_ai_summary(
-                em_avg      = raw["em_avg"],
-                red_pct     = raw["red_pct"],
-                ref_km      = st.session_state["ref_km"],
-                scope_label = f"{scope_lbl} – {pt_display}",
-                num_sites   = scope_df["website"].nunique(),
-                num_rows    = len(scope_df),
-                industries  = scope_df["industry"].dropna().tolist(),
-                route_label = route_lbl,
-                out_lang    = selected_lang_name,
-            )
-        st.session_state["ai_summary"]      = summary
-        st.session_state["ai_summary_meta"] = {
-            "website":  ai_website,
-            "pagetype": pt_display,
-            "lang":     selected_lang_name,
-        }
-        st.rerun()
-
-if st.session_state.get("ai_summary"):
-    meta = st.session_state["ai_summary_meta"]
-    st.success(f"**{meta.get('website','?')}** · {meta.get('pagetype','?')} · {meta.get('lang','?')}")
-    st.write(st.session_state["ai_summary"])
-    st.info("The summary will automatically be included in the PDF export.")
+components.html(html, height=840, scrolling=True)
 
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
