@@ -582,7 +582,7 @@ try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
 try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
 try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
 
-const AI_SUMMARY = (() => { try { return JSON.parse('{{AI_SUMMARY_JSON}}'); } catch (e) { return ""; } })();
+const AI_SUMMARY = (function() { try { return {{AI_SUMMARY_JSON}}; } catch(e) { return ""; } })();
 const SUMMARY_KEY = C.summary_key || 'Összesítő';
 
 // ── SessionStorage: állapot visszatöltése ─────────────────────────────────────
@@ -1164,109 +1164,112 @@ function updateMiddle() {
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
-  document.getElementById('export-msg').textContent = msg;
-  document.getElementById('export-overlay').classList.add('visible');
+    document.getElementById('export-msg').textContent = msg;
+    document.getElementById('export-overlay').classList.add('visible');
 }
+ 
 function hideExportOverlay() {
-  document.getElementById('export-overlay').classList.remove('visible');
+    document.getElementById('export-overlay').classList.remove('visible');
 }
-
+ 
 async function captureCanvas() {
-  await Promise.race([
-    document.fonts.ready,
-    new Promise(resolve => setTimeout(resolve, 3000)),
-  ]);
-  const emptySlots = document.querySelectorAll('.empty-slot');
-  emptySlots.forEach(s => s.classList.add('export-hide'));
-  const canvas = await html2canvas(document.getElementById('export-target'), {
-    useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
-  });
-  emptySlots.forEach(s => s.classList.remove('export-hide'));
-  return canvas;
-}
-
-function exportTimestamp() {
-  const n = new Date();
-  return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`
-       + `_${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}${String(n.getSeconds()).padStart(2,'0')}`;
-}
-
-function exportFilename(ext) {
-  const lang = (C.lang_code || 'hu').replace('-', '_');
-  return `infografika_${lang}_${exportTimestamp()}.${ext}`;
-}
-
-async function exportPNG() {
-  showExportOverlay('Saving image...');
-  try {
-    const canvas = await captureCanvas();
-    const link   = document.createElement('a');
-    link.download = exportFilename('png');
-    link.href     = canvas.toDataURL('image/png');
-    link.click();
-  } catch(e) {
-    alert('Export error: ' + e.message);
-  } finally {
-    hideExportOverlay();
-  }
-}
-
-async function exportPDF() {
-  showExportOverlay('Saving PDF...');
-  try {
-    const canvas  = await captureCanvas();
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pxToMm = 25.4 / 96;
-    const pdfW   = canvas.width  * pxToMm;
-    const pdfH   = canvas.height * pxToMm;
-    const pdf = new jsPDF({
-      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pdfW, pdfH],
+    await Promise.race([
+        document.fonts.ready,
+        new Promise(resolve => setTimeout(resolve, 3000)),
+    ]);
+    const emptySlots = document.querySelectorAll('.empty-slot');
+    emptySlots.forEach(s => s.classList.add('export-hide'));
+    const canvas = await html2canvas(document.getElementById('export-target'), {
+        useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
     });
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
-
-    // Ha van AI összefoglaló, html2canvas-szal rendereljük (helyes karakterkódoláshoz)
-    if (AI_SUMMARY && AI_SUMMARY.trim()) {
-      const today    = new Date().toISOString().slice(0, 10);
-      const scopeTxt = currentWebsite === (C.summary_key || 'Összesítő') ? 'All websites' : currentWebsite;
-      const ptTxt    = currentPagetype || 'All pages';
-
-      // Feltöltjük a rejtett summary div tartalmát
-      document.getElementById('sum-meta').textContent =
-        `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
-      document.getElementById('sum-body').innerHTML = AI_SUMMARY
-        .split(/\n\n+/)
-        .filter(p => p.trim())
-        .map(p => `<p style="margin:0 0 18px 0;">${p.trim().replace(/\n/g, ' ')}</p>`)
-        .join('');
-
-      // Renderelés html2canvas-szal
-      await document.fonts.ready;
-      const sumEl     = document.getElementById('summary-page');
-      const sumCanvas = await html2canvas(sumEl, {
-        useCORS: true, allowTaint: false,
-        scale: 2, backgroundColor: '#ffffff', logging: false,
-        width: 794,
-        height: sumEl.scrollHeight,
-        windowWidth: 794,
-      });
-
-      const sumImgData = sumCanvas.toDataURL('image/png');
-      const sumPdfW    = 210;
-      const sumPdfH    = sumPdfW * sumCanvas.height / sumCanvas.width;
-      pdf.addPage([sumPdfW, Math.max(297, sumPdfH)], 'portrait');
-      pdf.addImage(sumImgData, 'PNG', 0, 0, sumPdfW, Math.max(297, sumPdfH));
+    emptySlots.forEach(s => s.classList.remove('export-hide'));
+    return canvas;
+}
+ 
+function exportTimestamp() {
+    const n = new Date();
+    return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`
+         + `_${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}${String(n.getSeconds()).padStart(2,'0')}`;
+}
+ 
+function exportFilename(ext) {
+    const lang = (C.lang_code || 'hu').replace('-', '_');
+    return `infografika_${lang}_${exportTimestamp()}.${ext}`;
+}
+ 
+async function exportPNG() {
+    showExportOverlay('Saving image...');
+    try {
+        const canvas = await captureCanvas();
+        const link   = document.createElement('a');
+        link.download = exportFilename('png');
+        link.href     = canvas.toDataURL('image/png');
+        link.click();
+    } catch(e) {
+        alert('Export error: ' + e.message);
+    } finally {
+        hideExportOverlay();
     }
-
-    pdf.save(exportFilename('pdf'));
-  } catch(e) {
-    alert('PDF export error: ' + e.message);
-  } finally {
-    hideExportOverlay();
-  }
+}
+ 
+async function exportPDF() {
+    showExportOverlay('Saving PDF...');
+    try {
+        document.body.classList.add('export-mode');
+ 
+        const canvas  = await captureCanvas();
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+ 
+        
+        const PX_TO_MM = 25.4 / (96 * 4);
+        const pdfW = canvas.width  * PX_TO_MM;
+        const pdfH = canvas.height * PX_TO_MM;
+ 
+        const pdf = new jsPDF({
+            orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+            unit:   'mm',
+            format: [pdfW, pdfH],
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+ 
+        if (AI_SUMMARY && AI_SUMMARY.trim()) {
+            const today    = new Date().toISOString().slice(0, 10);
+            const scopeTxt = currentWebsite === (C.summary_key || 'Összesítő')
+                ? 'All websites' : currentWebsite;
+            const ptTxt    = currentPagetype || 'All pages';
+ 
+            document.getElementById('sum-meta').textContent =
+                `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
+            document.getElementById('sum-body').innerHTML = AI_SUMMARY
+                .split(/\n\n+/)
+                .filter(p => p.trim())
+                .map(p => `<p style="margin:0 0 18px 0;">${p.trim().replace(/\n/g, ' ')}</p>`)
+                .join('');
+ 
+            await document.fonts.ready;
+            const sumEl     = document.getElementById('summary-page');
+            const sumCanvas = await html2canvas(sumEl, {
+                useCORS: true, allowTaint: false,
+                scale: 2, backgroundColor: '#ffffff', logging: false,
+                width: 794, height: sumEl.scrollHeight, windowWidth: 794,
+            });
+            const sumImgData = sumCanvas.toDataURL('image/png');
+            const sumPageW   = 210;
+            const sumPageH   = sumPageW * sumCanvas.height / sumCanvas.width;
+            pdf.addPage([sumPageW, Math.max(297, sumPageH)], 'portrait');
+            pdf.addImage(sumImgData, 'PNG', 0, 0, sumPageW, sumPageH);
+        }
+ 
+        pdf.save(exportFilename('pdf'));
+    } catch(e) {
+        alert('PDF export error: ' + e.message);
+    } finally {
+        document.body.classList.remove('export-mode');
+        hideExportOverlay();
+    }
 }
 
 // ── Inicializálás ─────────────────────────────────────────────────────────────
