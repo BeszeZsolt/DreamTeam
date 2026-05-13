@@ -10,13 +10,23 @@ html { min-width: 600px; }
 body {
   font-family: 'Barlow', 'Segoe UI', sans-serif;
   background: #f5f2ec;
-  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
-  gap: 12px;
+  padding: 12px 16px 12px 16px;
+  gap: 10px;
+  border: 1.5px solid #c8bfa8;
+  border-radius: 12px;
+  box-sizing: border-box;
 }
+
+/* Stílusos vékony scrollbar */
+body::-webkit-scrollbar { width: 6px; }
+body::-webkit-scrollbar-track { background: transparent; }
+body::-webkit-scrollbar-thumb { background: #c8bfa8; border-radius: 3px; }
+body::-webkit-scrollbar-thumb:hover { background: #a09880; }
 
 .toolbar {
   width: 100%;
@@ -162,7 +172,6 @@ body {
   z-index: 5;
 }
 
-/* ── Infografika szöveg overlay-ek ── */
 .infog-filter-label {
   position: absolute;
   pointer-events: none;
@@ -422,6 +431,229 @@ body {
   line-height: 1.2;
 }
 
+/* ── AI Summary szekció ── */
+.ai-section {
+  width: 100%;
+  max-width: 1200px;
+  background: #eae6de;
+  border: 1px solid #c8bfa8;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ai-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+  user-select: none;
+}
+.ai-section-title {
+  color: #2d3a2d;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.ai-section-caption {
+  color: #5a6a5a;
+  font-size: 13px;
+  margin-top: 3px;
+}
+.ai-toggle-arrow {
+  color: #5a7a5a;
+  font-size: 13px;
+  transition: transform 0.2s;
+  display: inline-block;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.ai-toggle-arrow:hover { background: #d4ddd4; }
+.ai-toggle-arrow.open { transform: rotate(180deg); }
+.ai-section-body {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 20px 10px 20px;
+  border-top: 1px solid #c8bfa8;
+}
+.ai-section-body.open { display: flex; }
+.ai-generate-btn {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 28px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+  align-self: flex-end;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  letter-spacing: 0.03em;
+}
+.ai-generate-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.ai-generate-btn:active { transform: translateY(0); }
+.ai-generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.ai-result {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.ai-result.visible { display: flex; }
+.ai-result-meta {
+  background: #d4e8da;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #1a3a2a;
+  font-weight: 600;
+}
+.ai-result-text {
+  background: #f5f2ec;
+  border: 1px solid #c8bfa8;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #2d3a2d;
+  white-space: pre-wrap;
+  overflow-y: visible;
+}
+.ai-result-info {
+  font-size: 11px;
+  color: #7a8a7a;
+  font-style: italic;
+}
+.ai-stale-warning {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: #fdf3dc;
+  border: 1px solid #e8c97a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #7a5a10;
+}
+.ai-stale-warning.visible { display: flex; }
+.ai-regen-btn {
+  background: #e8a020;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  transition: opacity 0.15s;
+}
+.ai-regen-btn:hover { opacity: 0.85; }
+.ai-spinner {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #5a6a5a;
+  font-size: 12px;
+}
+.ai-spinner.visible { display: flex; }
+.ai-spinner-dot {
+  width: 8px; height: 8px;
+  background: #2d6a4f;
+  border-radius: 50%;
+  animation: ai-bounce 1.2s ease-in-out infinite;
+}
+.ai-spinner-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-spinner-dot:nth-child(3) { animation-delay: 0.4s; }
+@media (max-width: 700px) {
+  .ai-section-header { gap: 10px; padding: 12px 14px; }
+  .ai-section-caption { font-size: 11px; }
+  .ai-generate-btn { padding: 7px 16px; font-size: 12px; }
+  .ai-result-text { max-height: 25vh; }
+  .main-layout { gap: 8px; }
+  .sidebar { width: 110px; }
+}
+@keyframes ai-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.ai-error {
+  display: none;
+  background: #f5e0dc;
+  border: 1px solid #e0b0a8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #7a2a2a;
+}
+.ai-error.visible { display: block; }
+
+#pdf-stale-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(45,58,45,0.45);
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+}
+#pdf-stale-modal.visible { display: flex; }
+.pdf-modal-box {
+  background: #f5f2ec;
+  border: 1.5px solid #c8bfa8;
+  border-radius: 14px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.pdf-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2d3a2d;
+}
+.pdf-modal-desc {
+  font-size: 13px;
+  color: #5a6a5a;
+  line-height: 1.5;
+}
+.pdf-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pdf-modal-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  transition: opacity 0.15s;
+  text-align: left;
+}
+.pdf-modal-btn:hover { opacity: 0.85; }
+.pdf-modal-btn.primary   { background: #2d6a4f; color: #fff; }
+.pdf-modal-btn.secondary { background: #eae6de; color: #2d3a2d; border: 1px solid #c8bfa8; }
+.pdf-modal-btn.danger    { background: #f5f2ec; color: #7a5a3a; border: 1px solid #c8bfa8; }
+.pdf-modal-cancel {
+  font-size: 12px;
+  color: #8a9a8a;
+  text-align: center;
+  cursor: pointer;
+  padding: 2px;
+}
+.pdf-modal-cancel:hover { color: #2d3a2d; }
+
 #export-overlay {
   display: none;
   position: fixed;
@@ -524,9 +756,35 @@ body {
   </div>
 </div>
 
-<div id="export-overlay">
-  <div class="spinner"></div>
-  <span id="export-msg"></span>
+<!-- ── AI Summary szekció ── -->
+<div class="ai-section" id="ai-section">
+  <div class="ai-section-header">
+    <div>
+      <div class="ai-section-title">Summary Generator</div>
+      <div class="ai-section-caption">Generates a summary based on the current infographic view · Powered by Groq</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="ai-spinner" id="ai-spinner">
+        <div class="ai-spinner-dot"></div>
+        <div class="ai-spinner-dot"></div>
+        <div class="ai-spinner-dot"></div>
+        <span>Generating...</span>
+      </div>
+      <button class="ai-generate-btn" id="ai-gen-btn" onclick="generateAISummary()">Generate Summary</button>
+      <span class="ai-toggle-arrow" id="ai-toggle-arrow" onclick="toggleAiSection()" title="Show result">▼</span>
+    </div>
+  </div>
+  <div class="ai-section-body" id="ai-section-body">
+    <div class="ai-error" id="ai-error"></div>
+    <div class="ai-stale-warning" id="ai-stale-warning">
+      <span>⚠ The infographic has changed since this summary was generated.</span>
+    </div>
+    <div class="ai-result" id="ai-result">
+      <div class="ai-result-meta" id="ai-result-meta"></div>
+      <div class="ai-result-text" id="ai-result-text"></div>
+      <div class="ai-result-info">The summary will automatically be included in the PDF export.</div>
+    </div>
+  </div>
 </div>
 
 <!-- Rejtett AI összefoglaló oldal – html2canvas fogja renderelni -->
@@ -547,7 +805,7 @@ body {
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.02em;
-  ">Carbon Crane – AI Summary Report</div>
+  ">Carbon Crane – Summary Report</div>
   <div style="padding: 28px 40px 40px 40px;">
     <div id="sum-meta" style="
       color: #666;
@@ -567,8 +825,32 @@ body {
   </div>
 </div>
 
+<div id="pdf-stale-modal">
+  <div class="pdf-modal-box">
+    <div class="pdf-modal-title">⚠ The summary may be outdated</div>
+    <div class="pdf-modal-desc">The infographic has changed since the summary was generated. How would you like to proceed?</div>
+    <div class="pdf-modal-actions">
+      <button class="pdf-modal-btn primary" onclick="handlePDFModalChoice('regenerate')">
+        Regenerate summary &amp; export
+      </button>
+      <button class="pdf-modal-btn secondary" onclick="handlePDFModalChoice('keep')">
+        Export with current summary
+      </button>
+      <button class="pdf-modal-btn danger" onclick="handlePDFModalChoice('nosummary')">
+        Export without summary
+      </button>
+    </div>
+    <div class="pdf-modal-cancel" onclick="closePDFModal()">Cancel</div>
+  </div>
+</div>
+
+<div id="export-overlay">
+  <div class="spinner"></div>
+  <span id="export-msg"></span>
+</div>
+
 <script>
-// ── Python által befecskendezett adatok ──────────────────────────────────────
+// ── Python által injektált adatok ─────────────────────────────────────────────
 let rawStats  = {};
 let labels    = {};
 let websites  = [];
@@ -582,10 +864,12 @@ try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
 try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
 try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
 
-const AI_SUMMARY = (function() { try { return {{AI_SUMMARY_JSON}}; } catch(e) { return ""; } })();
-const SUMMARY_KEY = C.summary_key || 'Összesítő';
+const GROQ_API_KEY = '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';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL   = 'llama-3.3-70b-versatile';
+const SUMMARY_KEY  = C.summary_key || 'Összesítő';
 
-// ── SessionStorage: állapot visszatöltése ─────────────────────────────────────
+// ── SessionStorage ────────────────────────────────────────────────────────────
 try {
   const storedSessionId  = window.sessionStorage.getItem('cc_session_id');
   const currentSessionId = C.session_id || null;
@@ -594,13 +878,11 @@ try {
     if (raw) savedPanel = JSON.parse(raw);
   } else {
     window.sessionStorage.removeItem('cc_state');
-    if (currentSessionId) {
-      window.sessionStorage.setItem('cc_session_id', currentSessionId);
-    }
+    if (currentSessionId) window.sessionStorage.setItem('cc_session_id', currentSessionId);
   }
 } catch(e) {}
 
-// ── Toolbar állapot visszatöltése ─────────────────────────────────────────────
+// ── Toolbar állapot ───────────────────────────────────────────────────────────
 let currentWebsite  = savedPanel?.website  || websites[0] || '';
 let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
 let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
@@ -620,9 +902,29 @@ if (savedPanel?.trayLeft) {
   };
 }
 
-// ── State mentés sessionStorage-ba ───────────────────────────────────────────
-let _stateDebounceTimer = null;
+// ── AI summary állapot ────────────────────────────────────────────────────────
+let aiSummaryText = '';
+let aiSummaryMeta = {};
+let summarySnapshot = null; // az állapot generáláskor
 
+function getSummarySnapshot() {
+  return [
+    currentWebsite,
+    currentPagetype,
+    currentPV,
+    [...panelState.left].join(','),
+    [...panelState.right].join(','),
+  ].join('|');
+}
+
+function checkStaleSummary() {
+  if (!aiSummaryText) return;
+  const stale = summarySnapshot !== getSummarySnapshot();
+  document.getElementById('ai-stale-warning').classList.toggle('visible', stale);
+}
+
+// ── State mentés ──────────────────────────────────────────────────────────────
+let _stateDebounceTimer = null;
 function buildState() {
   return {
     trayLeft:  panelState.trayLeft,
@@ -634,13 +936,9 @@ function buildState() {
     pv:        currentPV,
   };
 }
-
 function saveStateNow() {
-  try {
-    window.sessionStorage.setItem('cc_state', JSON.stringify(buildState()));
-  } catch(e) {}
+  try { window.sessionStorage.setItem('cc_state', JSON.stringify(buildState())); } catch(e) {}
 }
-
 function sendStateToParent() {
   clearTimeout(_stateDebounceTimer);
   _stateDebounceTimer = setTimeout(saveStateNow, 300);
@@ -667,6 +965,14 @@ function calcFromRaw(raw, pv) {
     kwh:                  { num: huFormat(kwh),      unit: 'KWH' },
     house:                { num: huFormat(kwh / C.KWH_PER_HOUSE), unit: '' },
     red_pct:              (raw.red_pct * 100).toFixed(1) + '%',
+    // nyers számok az AI prompthoz
+    _kg_co2_raw:   kg_co2,
+    _kg_saved_raw: kg_saved,
+    _kwh_raw:      kwh,
+    _red_pct_raw:  raw.red_pct,
+    _bp_trips_raw: bp_trips,
+    _wash_raw:     kg_co2 / C.CO2_PER_WASH,
+    _house_raw:    kwh / C.KWH_PER_HOUSE,
   };
 }
 
@@ -674,103 +980,79 @@ function statsKey(website, pagetype) {
   if (!pagetype) return website === SUMMARY_KEY ? SUMMARY_KEY : website + '|';
   return `${website}|${pagetype}`;
 }
-
 function getCurrentCalc() {
   const key = statsKey(currentWebsite, currentPagetype);
   const raw = rawStats[key];
   if (!raw) return {};
   return calcFromRaw(raw, currentPV);
 }
+function isPagetypeView() { return !!currentPagetype; }
+function isSummaryView()  { return currentWebsite === SUMMARY_KEY || !currentWebsite; }
 
-function isPagetypeView() {
-  return !!currentPagetype;
-}
-
-function isSummaryView() {
-  return currentWebsite === SUMMARY_KEY || !currentWebsite;
-}
-
-// ── PV input kezelés ──────────────────────────────────────────────────────────
+// ── PV input ──────────────────────────────────────────────────────────────────
 function formatPVDisplay(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
-
 function parsePV(str) {
   const n = parseInt(str.replace(/\D/g, ''), 10);
   return (isNaN(n) || n <= 0) ? null : n;
 }
-
 function onPVInput(e) {
   const val = parsePV(e.target.value);
-  if (val) {
-    currentPV = val;
-    updateValues();
-    updateTexts();
-    sendStateToParent();
-  }
+  if (val) { currentPV = val; updateValues(); updateTexts(); sendStateToParent(); }
 }
-
 function onPVBlur(e) {
   const val = parsePV(e.target.value);
   if (val) currentPV = val;
   e.target.value = formatPVDisplay(currentPV);
   saveStateNow();
+  checkStaleSummary();
 }
 
-// ── Toolbar összerakása ────────────────────────────────────────────────────────
+// ── Toolbar ───────────────────────────────────────────────────────────────────
 function buildWebsiteSelector() {
   const el = document.getElementById('sel-website');
   el.innerHTML = '';
   websites.forEach(w => {
     const opt = document.createElement('option');
     opt.value = w;
-    opt.textContent = w === SUMMARY_KEY
-      ? (labels['all_website']?.description || w)
-      : w;
+    opt.textContent = w === SUMMARY_KEY ? (labels['all_website']?.description || w) : w;
     if (w === currentWebsite) opt.selected = true;
     el.appendChild(opt);
   });
 }
-
 function buildPagetypeSelector(website) {
   const el = document.getElementById('sel-pagetype');
   el.innerHTML = '';
   const pts = pagetypes[website] || [];
   if (pts.length === 0) {
     el.disabled = true;
-    const opt = document.createElement('option');
-    opt.textContent = '–';
-    el.appendChild(opt);
+    const opt = document.createElement('option'); opt.textContent = '–'; el.appendChild(opt);
     return;
   }
   el.disabled = false;
   const allOpt = document.createElement('option');
-  allOpt.value = '';
-  allOpt.textContent = labels['all_pagetype']?.description || 'All pages';
+  allOpt.value = ''; allOpt.textContent = labels['all_pagetype']?.description || 'All pages';
   if (currentPagetype === '') allOpt.selected = true;
   el.appendChild(allOpt);
   pts.forEach(pt => {
     const opt = document.createElement('option');
-    opt.value = pt;
-    opt.textContent = pt;
+    opt.value = pt; opt.textContent = pt;
     if (pt === currentPagetype) opt.selected = true;
     el.appendChild(opt);
   });
 }
-
 function onWebsiteChange(website) {
-  currentWebsite  = website;
-  currentPagetype = '';
+  currentWebsite = website; currentPagetype = '';
   buildPagetypeSelector(website);
-  updateValues();
-  saveStateNow();
+  updateValues(); saveStateNow();
+  checkStaleSummary();
+}
+function onPagetypeChange(pagetype) {
+  currentPagetype = pagetype; updateValues(); saveStateNow();
+  checkStaleSummary();
 }
 
-function onPagetypeChange(pagetype) {
-  currentPagetype = pagetype;
-  updateValues();
-  saveStateNow();
-}
 
 // ── Szöveges overlay-ek ───────────────────────────────────────────────────────
 function tpl(template) {
@@ -778,84 +1060,39 @@ function tpl(template) {
   let i = 0;
   return template.replace(/\{\}/g, () => (i < args.length ? args[i++] : ''));
 }
-
 function buildFilterLabel() {
-  const site = isSummaryView()
-    ? (labels['all_website']?.description || SUMMARY_KEY)
-    : currentWebsite;
-  const pt  = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const site = isSummaryView() ? (labels['all_website']?.description || SUMMARY_KEY) : currentWebsite;
+  const pt   = currentPagetype || (labels['all_pagetype']?.description || 'All pages');
   return `${site}: ${pt}`;
 }
-
 function buildSubtitle() {
   const n = (websites || []).filter(w => w !== SUMMARY_KEY).length;
-  if (isSummaryView()) {
-    return tpl(
-      labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of a shopping journey across {} websites?',
-      n
-    );
-  }
-  return tpl(
-    labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?',
-    currentWebsite
-  );
+  if (isSummaryView()) return tpl(labels['subtitle_multi']?.description || 'What is the CO\u2082e footprint of the {} websites examined?', n);
+  return tpl(labels['subtitle_single']?.description || 'What is the CO\u2082e footprint of {}?', currentWebsite);
 }
-
 function buildPVLabel() {
   const pvStr = formatPVDisplay(currentPV);
   const n     = (websites || []).filter(w => w !== SUMMARY_KEY).length;
   const pt    = currentPagetype;
-
   if (isSummaryView()) {
-    if (isPagetypeView()) {
-      return tpl(
-        labels['pv_multi_page']?.description || 'For {} page views across {} websites: {}',
-        pvStr, n, pt
-      );
-    } else {
-      return tpl(
-        labels['pv_multi_visit']?.description || 'For {} visits across {} websites',
-        pvStr, n
-      );
-    }
+    if (isPagetypeView()) return tpl(labels['pv_multi_page']?.description || 'For {} page views across {} websites: {}', pvStr, n, pt);
+    return tpl(labels['pv_multi_visit']?.description || 'For {} visits across {} websites', pvStr, n);
   } else {
-    if (isPagetypeView()) {
-      return tpl(
-        labels['pv_single_page']?.description || 'For {} page views \u2013 {}: {}',
-        pvStr, currentWebsite, pt
-      );
-    } else {
-      return tpl(
-        labels['pv_single_visit']?.description || 'For {} visits \u2013 {}',
-        pvStr, currentWebsite
-      );
-    }
+    if (isPagetypeView()) return tpl(labels['pv_single_page']?.description || 'For {} page views \u2013 {}: {}', pvStr, currentWebsite, pt);
+    return tpl(labels['pv_single_visit']?.description || 'For {} visits \u2013 {}', pvStr, currentWebsite);
   }
 }
-
 function updateTexts() {
   document.getElementById('infog-filter-label').textContent = buildFilterLabel();
   document.getElementById('infog-subtitle').textContent     = buildSubtitle();
   document.getElementById('infog-pv-label').textContent     = buildPVLabel();
 }
 
-// ── Kártya értékek ─────────────────────────────────────────────────────────────
+// ── Kártya értékek ────────────────────────────────────────────────────────────
 const BASE_SCALE = 0.57;
 const DIMS = {
-  bal: {
-    tarolo:       { w: 130, h: 50 },
-    fent:         { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
-    kozep:        { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
-    lent:         { w: Math.round(353*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
-    lent_egyedul: { w: Math.round(353*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
-  },
-  jobb: {
-    tarolo:       { w: 130, h: 50 },
-    fent:         { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
-    kozep:        { w: Math.round(320*BASE_SCALE), h: Math.round(97*BASE_SCALE) },
-    lent:         { w: Math.round(320*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
-    lent_egyedul: { w: Math.round(320*BASE_SCALE), h: Math.round(104*BASE_SCALE) },
-  }
+  bal:  { tarolo: {w:130,h:50}, fent: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, kozep: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, lent: {w:Math.round(353*BASE_SCALE),h:Math.round(104*BASE_SCALE)}, lent_egyedul: {w:Math.round(353*BASE_SCALE),h:Math.round(104*BASE_SCALE)} },
+  jobb: { tarolo: {w:130,h:50}, fent: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, kozep: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, lent: {w:Math.round(320*BASE_SCALE),h:Math.round(104*BASE_SCALE)}, lent_egyedul: {w:Math.round(320*BASE_SCALE),h:Math.round(104*BASE_SCALE)} },
 };
 const REF_WIDTH = 800;
 
@@ -865,25 +1102,13 @@ function updateDragdropScale() {
   if (!infEl || !area) return;
   area.style.transform = `scale(${infEl.offsetWidth / REF_WIDTH})`;
 }
-
-function notifyHeight() {
-  const toolbar    = document.getElementById('toolbar');
-  const mainLayout = document.getElementById('main-layout');
-  if (!toolbar || !mainLayout) return;
-  const total = Math.ceil(
-    toolbar.getBoundingClientRect().height +
-    mainLayout.getBoundingClientRect().height +
-    16*2 + 12*3
-  ) + 8;
-  window.parent.postMessage({ type: 'streamlit:setFrameHeight', height: total }, '*');
-}
+function notifyHeight() {}
 
 const IMGS = {
   bal:  { tarolo:'cards/sima_tarolo_bal.png', fent:'cards/sima_fent_bal.png', kozep:'cards/sima_kozep_bal.png', lent:'cards/sima_lent_bal.png', lent_egyedul:'cards/sima_lent_egyedul_bal.png' },
   jobb: { tarolo:'cards/sima_tarolo_jobb.png', fent:'cards/sima_fent_jobb.png', kozep:'cards/sima_kozep_jobb.png', lent:'cards/sima_lent_jobb.png', lent_egyedul:'cards/sima_lent_egyedul_jobb.png' },
   ora:  { egyedul:'cards/ora_egyedul.png', bal:'cards/ora_bal.png', jobb:'cards/ora_jobb.png', mindketto:'cards/ora_mindketto.png' }
 };
-
 const CARDS = {
   kg_co2:   { side:'left',  icon:'cards/kg.png',        valueKey:'kg_co2',        labelKey:'kg_co2'   },
   wash:     { side:'left',  icon:'cards/washing.png',   valueKey:'wash',           labelKey:'wash'     },
@@ -902,7 +1127,6 @@ function getValue(cardId) {
   if (val && typeof val === 'object') return val.num || '';
   return val || '';
 }
-
 function getUnit(cardId) {
   const key  = CARDS[cardId].valueKey;
   const calc = getCurrentCalc();
@@ -910,7 +1134,6 @@ function getUnit(cardId) {
   if (val && typeof val === 'object') return val.unit || '';
   return '';
 }
-
 function getLabel(cardId) {
   const lk = CARDS[cardId].labelKey;
   const l  = labels[lk];
@@ -921,28 +1144,19 @@ function getLabel(cardId) {
   }
   return l.description || '';
 }
-
 function updateValues() {
-  document.querySelectorAll('[data-card-id]').forEach(el => {
-    el.textContent = getValue(el.dataset.cardId);
-  });
-  document.querySelectorAll('[data-label-id]').forEach(el => {
-    el.textContent = getLabel(el.dataset.labelId);
-  });
-
+  document.querySelectorAll('[data-card-id]').forEach(el => { el.textContent = getValue(el.dataset.cardId); });
+  document.querySelectorAll('[data-label-id]').forEach(el => { el.textContent = getLabel(el.dataset.labelId); });
   const calc      = getCurrentCalc();
   const redPctStr = calc?.red_pct || '0%';
   document.getElementById('middle-value').textContent = redPctStr;
-
   const redPctLabel = isSummaryView()
     ? (labels['red_pct_multi']?.description  || 'AVERAGE REDUCTION POTENTIAL')
     : (labels['red_pct_single']?.description || 'REDUCTION POTENTIAL');
   document.getElementById('middle-label').textContent = redPctLabel;
-
   const angle  = (parseFloat(redPctStr) / 100) * 180 - 90;
   const needle = document.getElementById('needle-line');
   if (needle) needle.style.transform = `rotate(${angle}deg)`;
-
   updateTexts();
 }
 
@@ -953,21 +1167,14 @@ function getState(panelId, idx, total) {
   if (idx === total - 1) return 'fent';
   return 'kozep';
 }
-
-function getSide(panelId) {
-  return panelId === 'left' ? 'bal' : 'jobb';
-}
-
+function getSide(panelId) { return panelId === 'left' ? 'bal' : 'jobb'; }
 function getFrom(id) {
   if (panelState.trayLeft.includes(id))  return 'trayLeft';
   if (panelState.trayRight.includes(id)) return 'trayRight';
   if (panelState.left.includes(id))      return 'left';
   if (panelState.right.includes(id))     return 'right';
 }
-
-function removeFromState(id, from) {
-  panelState[from] = panelState[from].filter(c => c !== id);
-}
+function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c !== id); }
 
 function render() {
   renderTray('tray-left',  panelState.trayLeft,  'left');
@@ -979,12 +1186,13 @@ function render() {
   updateDragdropScale();
   setTimeout(notifyHeight, 150);
   sendStateToParent();
+  checkStaleSummary();
 }
 
 function renderTray(elId, cards, side) {
   const el = document.getElementById(elId);
   el.innerHTML = '';
-  [0, 1, 2].forEach(i => {
+  [0,1,2].forEach(i => {
     const slot = document.createElement('div');
     slot.className = 'tray-slot' + (cards[i] ? ' has-card' : '');
     if (cards[i]) slot.appendChild(makeCard(cards[i], 'tray'));
@@ -993,8 +1201,7 @@ function renderTray(elId, cards, side) {
   el.ondragover  = e => { e.preventDefault(); el.classList.add('dragover'); };
   el.ondragleave = e => { if (!el.contains(e.relatedTarget)) el.classList.remove('dragover'); };
   el.ondrop = e => {
-    e.preventDefault();
-    el.classList.remove('dragover');
+    e.preventDefault(); el.classList.remove('dragover');
     if (!dragged) return;
     if (CARDS[dragged.id].side !== side) return;
     const trayKey = `tray${side === 'left' ? 'Left' : 'Right'}`;
@@ -1002,20 +1209,18 @@ function renderTray(elId, cards, side) {
     if (panelState[trayKey].length >= 3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[trayKey].push(dragged.id);
-    dragged = null;
-    render();
+    dragged = null; render();
   };
 }
 
 function renderPanel(panelId, cards) {
-  const el    = document.getElementById(panelId);
+  const el   = document.getElementById(panelId);
   el.innerHTML = '';
   const side  = getSide(panelId);
   const total = cards.length;
   const fullH = DIMS[side].lent.h + DIMS[side].kozep.h + DIMS[side].fent.h;
   el.style.height = `${fullH}px`;
   const emptyHeights = [DIMS[side].lent.h, DIMS[side].kozep.h, DIMS[side].fent.h];
-
   for (let i = 0; i < 3; i++) {
     const slot = document.createElement('div');
     slot.className = 'slot';
@@ -1033,9 +1238,7 @@ function renderPanel(panelId, cards) {
     slot.ondragover  = e => { e.preventDefault(); e.stopPropagation(); slot.classList.add('slot-dragover'); };
     slot.ondragleave = e => { if (!slot.contains(e.relatedTarget)) slot.classList.remove('slot-dragover'); };
     slot.ondrop = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      slot.classList.remove('slot-dragover');
+      e.preventDefault(); e.stopPropagation(); slot.classList.remove('slot-dragover');
       if (!dragged) return;
       if (CARDS[dragged.id].side !== panelId) return;
       const fromPanel = dragged.from;
@@ -1043,16 +1246,14 @@ function renderPanel(panelId, cards) {
         const src = [...panelState[panelId]];
         const si  = src.indexOf(dragged.id);
         if (si === i) return;
-        src.splice(si, 1);
-        src.splice(i, 0, dragged.id);
+        src.splice(si, 1); src.splice(i, 0, dragged.id);
         panelState[panelId] = src;
       } else {
         if (panelState[panelId].length >= 3) return;
         removeFromState(dragged.id, fromPanel);
         panelState[panelId].splice(i, 0, dragged.id);
       }
-      dragged = null;
-      render();
+      dragged = null; render();
     };
     el.appendChild(slot);
   }
@@ -1064,8 +1265,7 @@ function renderPanel(panelId, cards) {
     if (panelState[panelId].length >= 3) return;
     removeFromState(dragged.id, dragged.from);
     panelState[panelId].push(dragged.id);
-    dragged = null;
-    render();
+    dragged = null; render();
   };
 }
 
@@ -1074,73 +1274,46 @@ function makeCard(id, context, idx, total) {
   card.className = 'card';
   card.draggable = true;
   const side = CARDS[id].side === 'left' ? 'bal' : 'jobb';
-
   const bg = document.createElement('img');
-  bg.className   = 'card-bg';
-  bg.crossOrigin = 'anonymous';
-
+  bg.className = 'card-bg'; bg.crossOrigin = 'anonymous';
   if (context === 'tray') {
-    card.style.width  = '130px';
-    card.style.height = '50px';
-    bg.src = IMGS[side].tarolo;
-    card.appendChild(bg);
+    card.style.width = '130px'; card.style.height = '50px';
+    bg.src = IMGS[side].tarolo; card.appendChild(bg);
     const icon = document.createElement('img');
-    icon.className = 'card-icon-tray';
-    icon.src = CARDS[id].icon;
-    icon.crossOrigin = 'anonymous';
+    icon.className = 'card-icon-tray'; icon.src = CARDS[id].icon; icon.crossOrigin = 'anonymous';
     card.appendChild(icon);
     const val = document.createElement('span');
-    val.className      = 'card-value-tray';
-    val.dataset.cardId = id;
-    val.textContent    = getValue(id);
+    val.className = 'card-value-tray'; val.dataset.cardId = id; val.textContent = getValue(id);
     card.appendChild(val);
   } else {
     const st  = getState(context, idx, total);
     const dim = DIMS[side][st];
-    card.style.width  = `${dim.w}px`;
-    card.style.height = `${dim.h}px`;
-    bg.src = IMGS[side][st];
-    card.appendChild(bg);
-
+    card.style.width = `${dim.w}px`; card.style.height = `${dim.h}px`;
+    bg.src = IMGS[side][st]; card.appendChild(bg);
     const icon = document.createElement('img');
-    icon.className = id === 'house'    ? 'card-icon-house'
-                   : id === 'bp_paris' ? 'card-icon-car'
-                   : 'card-icon';
-    icon.src = CARDS[id].icon;
-    icon.crossOrigin = 'anonymous';
-    card.appendChild(icon);
-
+    icon.className = id === 'house' ? 'card-icon-house' : id === 'bp_paris' ? 'card-icon-car' : 'card-icon';
+    icon.src = CARDS[id].icon; icon.crossOrigin = 'anonymous'; card.appendChild(icon);
     const textBlock = document.createElement('div');
     textBlock.className = 'card-text' + (context === 'left' && idx === 0 ? ' indent' : '');
-
     const numRow = document.createElement('div');
     numRow.style.cssText = 'display:flex;align-items:baseline;gap:3px;';
     const numEl = document.createElement('span');
-    numEl.className    = 'card-number';
-    numEl.dataset.cardId = id;
-    numEl.textContent  = getValue(id);
+    numEl.className = 'card-number'; numEl.dataset.cardId = id; numEl.textContent = getValue(id);
     numRow.appendChild(numEl);
-
     const unit = getUnit(id);
     if (unit) {
       const unitEl = document.createElement('span');
-      unitEl.className   = 'card-unit';
-      unitEl.textContent = unit;
-      numRow.appendChild(unitEl);
+      unitEl.className = 'card-unit'; unitEl.textContent = unit; numRow.appendChild(unitEl);
     }
     textBlock.appendChild(numRow);
-
     const labelText = getLabel(id);
     if (labelText) {
       const labelEl = document.createElement('span');
-      labelEl.className     = 'card-label';
-      labelEl.dataset.labelId = id;
-      labelEl.textContent   = labelText;
+      labelEl.className = 'card-label'; labelEl.dataset.labelId = id; labelEl.textContent = labelText;
       textBlock.appendChild(labelEl);
     }
     card.appendChild(textBlock);
   }
-
   card.ondragstart = e => {
     e.stopPropagation();
     dragged = { id, from: getFrom(id) };
@@ -1157,119 +1330,272 @@ function updateMiddle() {
   const hasL = panelState.left.length  > 0;
   const hasR = panelState.right.length > 0;
   let key = 'egyedul';
-  if (hasL && hasR)   key = 'mindketto';
-  else if (hasL)      key = 'bal';
-  else if (hasR)      key = 'jobb';
+  if (hasL && hasR) key = 'mindketto';
+  else if (hasL)    key = 'bal';
+  else if (hasR)    key = 'jobb';
   document.getElementById('middle').src = IMGS.ora[key];
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
+// ── AI Summary generálás ──────────────────────────────────────────────────────
+async function generateAISummary() {
+  const aiWebsite  = currentWebsite;
+  const aiPagetype = currentPagetype;
+  const key        = statsKey(aiWebsite, aiPagetype);
+  const raw        = rawStats[key];
+
+  document.getElementById('ai-error').classList.remove('visible');
+  document.getElementById('ai-result').classList.remove('visible');
+
+  if (!raw) {
+    document.getElementById('ai-error').textContent = `No data found for this selection (${key}).`;
+    document.getElementById('ai-error').classList.add('visible');
+    setTimeout(notifyHeight, 200);
+    return;
+  }
+
+  const btn = document.getElementById('ai-gen-btn');
+  btn.disabled = true;
+  document.getElementById('ai-spinner').classList.add('visible');
+  setTimeout(notifyHeight, 200);
+
+  const calc        = calcFromRaw(raw, currentPV);
+  const scopeLabel  = aiWebsite === SUMMARY_KEY ? 'All websites' : aiWebsite;
+  // 5. fix: pagetype neve soha nem fordítódik le, az eredeti értéket használjuk
+  const ptDisplay   = aiPagetype || (labels['all_pagetype']?.description || 'All pages');
+  const routeLabel  = C.route_label || 'Budapest → Paris';
+  const outLang     = C.selected_lang_name || 'English';
+  const numSites    = aiWebsite === SUMMARY_KEY
+    ? (websites.filter(w => w !== SUMMARY_KEY).length)
+    : 1;
+
+  // 1. fix: csak az infografikán ténylegesen megjelenő kártyák adatai kerülnek a promptba
+  const activeLeft  = panelState.left;
+  const activeRight = panelState.right;
+  const activeCards = [...activeLeft, ...activeRight];
+
+  const cardLines = [];
+  if (activeCards.includes('kg_co2'))   cardLines.push(`- Total CO2 emission: ${Math.round(calc._kg_co2_raw).toLocaleString()} kg CO2e`);
+  if (activeCards.includes('wash'))     cardLines.push(`- Equivalent laundry loads: ${Math.round(calc._wash_raw).toLocaleString()}`);
+  if (activeCards.includes('bp_paris')) cardLines.push(`- Equivalent ${routeLabel} road trips: ${calc._bp_trips_raw.toLocaleString()}`);
+  if (activeCards.includes('kg_saved')) cardLines.push(`- CO2 saved with optimization: ${Math.round(calc._kg_saved_raw).toLocaleString()} kg CO2e`);
+  if (activeCards.includes('kwh'))      cardLines.push(`- Energy saved: ${Math.round(calc._kwh_raw).toLocaleString()} kWh`);
+  if (activeCards.includes('house'))    cardLines.push(`- Equivalent households powered: ${Math.round(calc._house_raw).toLocaleString()}`);
+  // A középső óra mindig látható
+  cardLines.push(`- Reduction potential: ${(calc._red_pct_raw * 100).toFixed(1)}%`);
+
+  const prompt = `You are a sustainability analyst writing a concise infographic report for Carbon Crane.
+Write a professional summary in ${outLang}. Use 3-4 short paragraphs of flowing prose.
+No markdown headers, no bullet points, no bold text. Just clean readable paragraphs.
+Only reference the numbers listed below — these are exactly the metrics shown on the infographic.
+End on a forward-looking note about the reduction potential.
+IMPORTANT: Keep proper nouns untranslated — website names, page type names, and route names must appear exactly as written below, do not translate them.
+
+SCOPE:
+- Website / scope: ${scopeLabel}
+- Page type: ${ptDisplay}
+- Websites analysed: ${numSites}
+- Reference route: ${routeLabel}
+- Page views modelled: ${huFormat(currentPV)}
+
+METRICS SHOWN ON THE INFOGRAPHIC:
+${cardLines.join('\n')}
+
+Write only the summary paragraphs, nothing else.`;
+
+  try {
+    const resp = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        model:       GROQ_MODEL,
+        max_tokens:  700,
+        temperature: 0.65,
+        messages:    [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const code = resp.status;
+      if (code === 401) throw new Error('Invalid API key.');
+      if (code === 429) throw new Error('Rate limit reached. Please wait a minute and try again.');
+      throw new Error(`API error (${code})`);
+    }
+
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content?.trim() || '';
+
+    aiSummaryText = text;
+    aiSummaryMeta = { website: aiWebsite, pagetype: ptDisplay, lang: outLang };
+    summarySnapshot = getSummarySnapshot();
+    document.getElementById('ai-stale-warning').classList.remove('visible');
+
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('ai-result-meta').textContent =
+      `${scopeLabel}  ·  ${ptDisplay}  ·  ${outLang}  ·  ${today}`;
+    document.getElementById('ai-result-text').textContent = text;
+    document.getElementById('ai-result').classList.add('visible');
+    openAiSection();
+
+  } catch(e) {
+    document.getElementById('ai-error').textContent = 'Error during generation: ' + e.message;
+    document.getElementById('ai-error').classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('ai-spinner').classList.remove('visible');
+    setTimeout(notifyHeight, 200);
+  }
+}
+
 // ── Export ────────────────────────────────────────────────────────────────────
 function showExportOverlay(msg) {
-    document.getElementById('export-msg').textContent = msg;
-    document.getElementById('export-overlay').classList.add('visible');
+  document.getElementById('export-msg').textContent = msg;
+  document.getElementById('export-overlay').classList.add('visible');
 }
- 
 function hideExportOverlay() {
-    document.getElementById('export-overlay').classList.remove('visible');
+  document.getElementById('export-overlay').classList.remove('visible');
 }
- 
+
 async function captureCanvas() {
-    await Promise.race([
-        document.fonts.ready,
-        new Promise(resolve => setTimeout(resolve, 3000)),
-    ]);
-    const emptySlots = document.querySelectorAll('.empty-slot');
-    emptySlots.forEach(s => s.classList.add('export-hide'));
-    const canvas = await html2canvas(document.getElementById('export-target'), {
-        useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
-    });
-    emptySlots.forEach(s => s.classList.remove('export-hide'));
-    return canvas;
+  await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
+  const emptySlots = document.querySelectorAll('.empty-slot');
+  emptySlots.forEach(s => s.classList.add('export-hide'));
+  // border-radius eltávolítása az exporthoz
+  const exportTarget = document.getElementById('export-target');
+  const bgImg = document.getElementById('bg-img');
+  const prevRadius = exportTarget.style.borderRadius;
+  const prevOutline = exportTarget.style.outline;
+  const prevBgRadius = bgImg.style.borderRadius;
+  exportTarget.style.borderRadius = '0';
+  exportTarget.style.outline = 'none';
+  bgImg.style.borderRadius = '0';
+  const canvas = await html2canvas(exportTarget, {
+    useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
+  });
+  exportTarget.style.borderRadius = prevRadius;
+  exportTarget.style.outline = prevOutline;
+  bgImg.style.borderRadius = prevBgRadius;
+  emptySlots.forEach(s => s.classList.remove('export-hide'));
+  return canvas;
 }
- 
+
 function exportTimestamp() {
-    const n = new Date();
-    return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`
-         + `_${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}${String(n.getSeconds()).padStart(2,'0')}`;
+  const n = new Date();
+  return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`
+       + `_${String(n.getHours()).padStart(2,'0')}${String(n.getMinutes()).padStart(2,'0')}${String(n.getSeconds()).padStart(2,'0')}`;
 }
- 
 function exportFilename(ext) {
-    const lang = (C.lang_code || 'hu').replace('-', '_');
-    return `infografika_${lang}_${exportTimestamp()}.${ext}`;
+  const lang = (C.lang_code || 'hu').replace('-', '_');
+  return `infografika_${lang}_${exportTimestamp()}.${ext}`;
 }
- 
+
 async function exportPNG() {
-    showExportOverlay('Saving image...');
-    try {
-        const canvas = await captureCanvas();
-        const link   = document.createElement('a');
-        link.download = exportFilename('png');
-        link.href     = canvas.toDataURL('image/png');
-        link.click();
-    } catch(e) {
-        alert('Export error: ' + e.message);
-    } finally {
-        hideExportOverlay();
-    }
+  showExportOverlay('Saving image...');
+  try {
+    const canvas = await captureCanvas();
+    const link   = document.createElement('a');
+    link.download = exportFilename('png');
+    link.href     = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('Export error: ' + e.message);
+  } finally {
+    hideExportOverlay();
+  }
 }
- 
+
+function closePDFModal() {
+  document.getElementById('pdf-stale-modal').classList.remove('visible');
+}
+
+async function handlePDFModalChoice(choice) {
+  closePDFModal();
+  if (choice === 'regenerate') {
+    await generateAISummary();
+  } else if (choice === 'nosummary') {
+    const saved = aiSummaryText;
+    aiSummaryText = '';
+    await doExportPDF();
+    aiSummaryText = saved;
+    return;
+  }
+  await doExportPDF();
+}
+
 async function exportPDF() {
-    showExportOverlay('Saving PDF...');
-    try {
-        document.body.classList.add('export-mode');
- 
-        const canvas  = await captureCanvas();
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
- 
-        
-        const PX_TO_MM = 25.4 / (96 * 4);
-        const pdfW = canvas.width  * PX_TO_MM;
-        const pdfH = canvas.height * PX_TO_MM;
- 
-        const pdf = new jsPDF({
-            orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-            unit:   'mm',
-            format: [pdfW, pdfH],
-        });
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
- 
-        if (AI_SUMMARY && AI_SUMMARY.trim()) {
-            const today    = new Date().toISOString().slice(0, 10);
-            const scopeTxt = currentWebsite === (C.summary_key || 'Összesítő')
-                ? 'All websites' : currentWebsite;
-            const ptTxt    = currentPagetype || 'All pages';
- 
-            document.getElementById('sum-meta').textContent =
-                `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
-            document.getElementById('sum-body').innerHTML = AI_SUMMARY
-                .split(/\n\n+/)
-                .filter(p => p.trim())
-                .map(p => `<p style="margin:0 0 18px 0;">${p.trim().replace(/\n/g, ' ')}</p>`)
-                .join('');
- 
-            await document.fonts.ready;
-            const sumEl     = document.getElementById('summary-page');
-            const sumCanvas = await html2canvas(sumEl, {
-                useCORS: true, allowTaint: false,
-                scale: 2, backgroundColor: '#ffffff', logging: false,
-                width: 794, height: sumEl.scrollHeight, windowWidth: 794,
-            });
-            const sumImgData = sumCanvas.toDataURL('image/png');
-            const sumPageW   = 210;
-            const sumPageH   = sumPageW * sumCanvas.height / sumCanvas.width;
-            pdf.addPage([sumPageW, Math.max(297, sumPageH)], 'portrait');
-            pdf.addImage(sumImgData, 'PNG', 0, 0, sumPageW, sumPageH);
-        }
- 
-        pdf.save(exportFilename('pdf'));
-    } catch(e) {
-        alert('PDF export error: ' + e.message);
-    } finally {
-        document.body.classList.remove('export-mode');
-        hideExportOverlay();
+  const isStale = aiSummaryText && summarySnapshot !== getSummarySnapshot();
+  if (isStale) {
+    document.getElementById('pdf-stale-modal').classList.add('visible');
+    return;
+  }
+  await doExportPDF();
+}
+
+async function doExportPDF() {
+  showExportOverlay('Saving PDF...');
+  try {
+    const canvas  = await captureCanvas();
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const PX_TO_MM = 25.4 / (96 * 4);
+    const pdfW = canvas.width  * PX_TO_MM;
+    const pdfH = canvas.height * PX_TO_MM;
+    const pdf = new jsPDF({
+      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+      unit: 'mm', format: [pdfW, pdfH],
+    });
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+
+    if (aiSummaryText && aiSummaryText.trim()) {
+      const today    = new Date().toISOString().slice(0, 10);
+      const scopeTxt = aiSummaryMeta.website === SUMMARY_KEY ? 'All websites' : (aiSummaryMeta.website || 'All websites');
+      const ptTxt    = aiSummaryMeta.pagetype || 'All pages';
+      document.getElementById('sum-meta').textContent =
+        `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
+      document.getElementById('sum-body').innerHTML = aiSummaryText
+        .split(/\n\n+/)
+        .filter(p => p.trim())
+        .map(p => `<p style="margin:0 0 14px 0;">${p.trim().replace(/\n/g, ' ')}</p>`)
+        .join('');
+      await document.fonts.ready;
+      const sumEl     = document.getElementById('summary-page');
+      const sumCanvas = await html2canvas(sumEl, {
+        useCORS: true, allowTaint: false, scale: 2, backgroundColor: '#ffffff', logging: false,
+        width: 794, height: sumEl.scrollHeight, windowWidth: 794,
+      });
+      const sumImgData = sumCanvas.toDataURL('image/png');
+      // A4 portrait: 210×297mm, kép teljes szélességre skálázva
+      const sumPageW = 210;
+      const sumPageH = 297;
+      const imgH = sumPageW * sumCanvas.height / sumCanvas.width;
+      pdf.addPage([sumPageW, sumPageH], 'portrait');
+      pdf.addImage(sumImgData, 'PNG', 0, 0, sumPageW, Math.min(imgH, sumPageH));
     }
+    pdf.save(exportFilename('pdf'));
+  } catch(e) {
+    alert('PDF export error: ' + e.message);
+  } finally {
+    hideExportOverlay();
+  }
+}
+
+// ── AI Section toggle ─────────────────────────────────────────────────────────
+function toggleAiSection() {
+  const body  = document.getElementById('ai-section-body');
+  const arrow = document.getElementById('ai-toggle-arrow');
+  const isOpen = body.classList.toggle('open');
+  arrow.classList.toggle('open', isOpen);
+  setTimeout(notifyHeight, 250);
+}
+
+function openAiSection() {
+  const body  = document.getElementById('ai-section-body');
+  const arrow = document.getElementById('ai-toggle-arrow');
+  body.classList.add('open');
+  arrow.classList.add('open');
+  setTimeout(notifyHeight, 250);
 }
 
 // ── Inicializálás ─────────────────────────────────────────────────────────────
@@ -1277,11 +1603,9 @@ buildWebsiteSelector();
 buildPagetypeSelector(currentWebsite);
 document.getElementById('pv-input').value = formatPVDisplay(currentPV);
 
-const bgImg = document.getElementById('bg-img');
+const bgImg    = document.getElementById('bg-img');
 const fontReady = document.fonts.ready;
-const imgReady  = new Promise(resolve => {
-  if (bgImg.complete) resolve(); else bgImg.onload = resolve;
-});
+const imgReady  = new Promise(resolve => { if (bgImg.complete) resolve(); else bgImg.onload = resolve; });
 Promise.all([fontReady, imgReady]).then(() => render());
 
 const ro = new ResizeObserver(() => { updateDragdropScale(); setTimeout(notifyHeight, 150); });
