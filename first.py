@@ -291,6 +291,7 @@ websites_list = [SUMMARY_KEY] + sorted(df["website"].unique().tolist())
 ref_km        = st.session_state["ref_km"]
 
 # ── Groq API kulcs (ideiglenesen hard-coded) ─────────────────────────────────
+# TODO: környezeti változóba kell mozgatni
 groq_api_key = "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"
 
 def safe_json(obj) -> str:
@@ -326,7 +327,6 @@ constants = {
     "lang_code":          lang_code,
     "summary_key":        SUMMARY_KEY,
     "session_id":         st.session_state["session_id"],
-    # AI summary-hoz szükséges extra konstansok
     "selected_lang_name": selected_lang_name,
     "route_label":        f"{city1_raw} \u2192 {city2_raw}",
 }
@@ -384,8 +384,3 @@ if st.session_state["geocoded_cities"] is not None:
     addr2    = g2_local.address if g2_local else cities["city2_en"]
     st.success(f"Road distance: **{dist_km:,.0f} km** – this is now the reference route!")
     st.caption(f"({addr1}  →  {addr2})")
-    st.info(
-        f"The selected route is **{dist_km / BP_PARIS_KM:.2f}×** the Budapest–Paris "
-        f"distance ({BP_PARIS_KM} km). "
-        f"The infographic values have been updated to use this as the new reference route."
-    )
