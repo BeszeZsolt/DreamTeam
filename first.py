@@ -116,12 +116,8 @@ if "session_id"      not in st.session_state: st.session_state["session_id"]    
 # ── Segédfüggvények ───────────────────────────────────────────────────────────
 
 def img_to_base64(path: str) -> str:
-    """PNG képet data URI-vá alakít."""
     with open(path, "rb") as f:
         return "data:image/png;base64," + base64.b64encode(f.read()).decode()
-
-    with open(path, "rb") as f:
-        return "data:image/svg+xml;base64," + base64.b64encode(f.read()).decode()
 
 def truncate(text: str, max_chars: int) -> str:
     if len(text) <= max_chars:
@@ -255,6 +251,7 @@ with open("drag_drop.html", "r") as f:
     html = f.read()
 
 # ── PNG kártyák + monitor képek base64 injektálása ──────────────────────────────
+
 card_images = [
     "sima_tarolo_bal", "sima_tarolo_jobb",
     "sima_fent_bal", "sima_fent_jobb",
@@ -268,7 +265,6 @@ card_images = [
 ]
 for name in card_images:
     html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
-
 
 # ── Nyelvválasztó ─────────────────────────────────────────────────────────────
 
@@ -285,19 +281,14 @@ with col_lang:
 
 lang_code = LANGUAGES[selected_lang_name]
 
-# ── Útvonal városnevei ────────────────────────────────────────────────────────
-
 city1_raw, city2_raw = get_route_cities(lang_code)
 city1_fit, city2_fit = fit_cities(city1_raw, city2_raw)
-
-# ── Adatok összerakása ────────────────────────────────────────────────────────
 
 raw_stats     = build_raw_stats(df)
 pagetypes_map = build_pagetypes_map(df)
 websites_list = [SUMMARY_KEY] + sorted(df["website"].unique().tolist())
 ref_km        = st.session_state["ref_km"]
 
-# ── Groq API kulcs — secrets.toml-ból olvasva ────────────────────────────────
 groq_api_key = st.secrets["GROQ_API_KEY"]
 
 def safe_json(obj) -> str:
