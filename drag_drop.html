@@ -219,69 +219,80 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
 /* ── Monitor gombok ── */
 .monitors-row {
   position: absolute;
+  top: 15%;
   left: 4%;
   right: 24%;
-  top: 19%;
-  height: 23%;
+  height: 27%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 1.2%;
+  gap: 1%;
   pointer-events: all;
-  z-index: 10;
+  z-index: 15;
 }
 .monitor-btn {
-  flex: 0 1 auto;
   position: relative;
-  cursor: pointer;
-  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), filter 0.22s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  outline: none;
+  flex: 0 0 23%;
+  height: 100%;
+  padding: 0;
   border: none;
   background: transparent;
-  padding: 0;
-  height: 100%;
-  max-width: 23%;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(.34,1.56,.64,1);
+  display: flex;
+  align-items: flex-end;
 }
-.monitor-btn .monitor-img {
-  height: 100%;
-  width: auto;
+.monitor-btn img {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
   pointer-events: none;
-  object-fit: contain;
 }
 .monitor-btn .monitor-label {
   position: absolute;
-  bottom: 26%;
+  top: 56%;
   left: 50%;
-  transform: translateX(-50%);
-  color: #1a3a0a;
+  transform: translate(-50%, -50%);
   font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
   font-weight: 700;
-  font-size: 0.75vw;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  background: #000000;
+  padding: 2px 7px;
+  border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 88%;
+  max-width: 90%;
   pointer-events: none;
-  text-shadow: 0 1px 3px rgba(255,255,255,0.9);
+  line-height: 1.4;
   text-align: center;
 }
 .monitor-btn.selected {
-  transform: scale(1.12) translateY(-6%);
-  filter: drop-shadow(0 6px 18px rgba(45,90,27,0.5));
+  transform: scale(1.12) translateY(-4%);
   z-index: 20;
 }
 .monitor-btn:hover:not(.selected) {
-  transform: scale(1.06) translateY(-3%);
-  filter: drop-shadow(0 3px 10px rgba(45,90,27,0.3));
+  transform: scale(1.03) translateY(-1%);
 }
-/* Export során a monitor gomb ne legyen kiemelve */
-.export-hide-monitors { visibility: hidden; }
+.monitor-extra-badge {
+  align-self: center;
+  flex: 0 0 auto;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 1.1vw;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: 0.04em;
+}
 
 .export-bar {
   display: flex;
@@ -347,6 +358,7 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
   border-radius: 6px;
 }
 .export-hide { visibility: hidden; }
+.export-selected-off { transform: none !important; filter: none !important; }
 
 .card {
   background: transparent;
@@ -777,7 +789,7 @@ body::-webkit-scrollbar-thumb:hover { background: #a09880; }
       <div class="infog-filter-label" id="infog-filter-label"></div>
       <div class="infog-subtitle"     id="infog-subtitle"></div>
 
-      <!-- ── Monitor gombok sora ── -->
+      <!-- ── Monitor gombok ── -->
       <div class="monitors-row" id="monitors-row"></div>
 
       <div class="infog-pv-label"     id="infog-pv-label"></div>
@@ -938,6 +950,14 @@ const GROQ_API_KEY = '{{GROQ_API_KEY}}';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 const SUMMARY_KEY  = C.summary_key || 'Összesítő';
+
+// ── Monitor képek (first.py injektálja base64-re, mint a többi kártyát) ───────
+const MONITOR_IMGS = [
+  'cards/monitor1.png',
+  'cards/monitor2.png',
+  'cards/monitor3.png',
+  'cards/monitor4.png',
+];
 
 // ── SessionStorage ────────────────────────────────────────────────────────────
 try {
@@ -1121,108 +1141,70 @@ function onWebsiteChange(website) {
 }
 function onPagetypeChange(pagetype) {
   currentPagetype = pagetype;
-  // A monitor kijelölés frissítése
   syncMonitorSelection();
   updateValues(); saveStateNow();
   checkStaleSummary();
 }
 
-// ── Monitor SVG template ──────────────────────────────────────────────────────
-// Az SVG tartalma a monitor1.svg fájlból inline beágyazva
-// A Python kód ezt a placeholder-t felváltja a valódi SVG tartalomra
-// ── Monitor PNG képek (first.py injektálja base64-re, mint a többi kártyát) ──
-const MONITOR_PNG_SRCS = [
-  'cards/monitor1.png',
-  'cards/monitor2.png',
-  'cards/monitor3.png',
-  'cards/monitor4.png',
-];
-
 // ── Monitor logika ────────────────────────────────────────────────────────────
 
-/**
- * Visszaadja az aktuális website subpage-jeit (pageType-jait).
- * Ha az aktuális view az összesítő (SUMMARY_KEY), üres tömböt ad vissza.
- */
-function getCurrentSubpages() {
-  if (isSummaryView()) return [];
-  return pagetypes[currentWebsite] || [];
-}
-
-/**
- * Monitor gomb kattintás kezelő.
- * Ha az adott pagetype már ki van választva → visszaáll az összesítőre ("" pagetype).
- * Ha nem → kiválasztja az adott pagetype-ot.
- */
-function onMonitorClick(pagetype) {
-  if (currentPagetype === pagetype) {
-    // Másodszori kattintás: visszaáll az összesítőre
-    currentPagetype = '';
-    // Dropdown szinkronizálás
-    const sel = document.getElementById('sel-pagetype');
-    if (sel) sel.value = '';
-  } else {
-    currentPagetype = pagetype;
-    // Dropdown szinkronizálás
-    const sel = document.getElementById('sel-pagetype');
-    if (sel) sel.value = pagetype;
-  }
-  syncMonitorSelection();
-  updateValues();
-  saveStateNow();
-  checkStaleSummary();
-}
-
-/**
- * Szinkronizálja a monitorok vizuális kijelölési állapotát.
- */
-function syncMonitorSelection() {
-  document.querySelectorAll('.monitor-btn').forEach(btn => {
-    const pt = btn.dataset.pagetype;
-    btn.classList.toggle('selected', pt === currentPagetype && currentPagetype !== '');
-  });
-}
-
-/**
- * Rendereli a monitor gombokat az aktuális website subpage-jei alapján.
- */
 function renderMonitors() {
   const row = document.getElementById('monitors-row');
-  if (!row) return;
   row.innerHTML = '';
 
-  const subpages = getCurrentSubpages();
+  const key    = isSummaryView() ? SUMMARY_KEY : currentWebsite;
+  const allPts = pagetypes[key] || [];
+  if (allPts.length === 0) return;
 
-  // Ha összesítő nézet vagy nincs subpage, a sor üres marad
-  if (subpages.length === 0) return;
+  const pts   = allPts.slice(0, 4);
+  const extra = allPts.length - 4;
 
-  // Maximum 4 monitort jelenítünk meg
-  const visible = subpages.slice(0, 4);
-
-  visible.forEach((pt, idx) => {
+  pts.forEach((pt, i) => {
     const btn = document.createElement('button');
     btn.className = 'monitor-btn' + (pt === currentPagetype ? ' selected' : '');
-    btn.dataset.pagetype = pt;
     btn.title = pt;
-    btn.setAttribute('aria-label', pt);
 
-    // Monitor kép: cards/monitorN.svg (first.py base64-re konvertálja)
     const img = document.createElement('img');
-    img.src = MONITOR_PNG_SRCS[idx] || MONITOR_PNG_SRCS[0];
+    img.src = MONITOR_IMGS[i] || MONITOR_IMGS[0];
     img.alt = pt;
-    img.className = 'monitor-img';
     img.crossOrigin = 'anonymous';
     btn.appendChild(img);
 
-    // Felirat
     const label = document.createElement('span');
     label.className = 'monitor-label';
     label.textContent = pt;
     btn.appendChild(label);
 
-    btn.addEventListener('click', () => onMonitorClick(pt));
+    btn.addEventListener('click', () => {
+      if (currentPagetype === pt) {
+        currentPagetype = '';
+      } else {
+        currentPagetype = pt;
+      }
+      document.getElementById('sel-pagetype').value = currentPagetype;
+      syncMonitorSelection();
+      updateValues();
+      saveStateNow();
+      checkStaleSummary();
+    });
 
     row.appendChild(btn);
+  });
+
+  // Ha több mint 4 aloldal van: (+N) jelző a sor végén
+  if (extra > 0) {
+    const badge = document.createElement('div');
+    badge.className = 'monitor-extra-badge';
+    badge.textContent = '+' + extra;
+    badge.title = extra + ' további aloldal a dropdown-ban';
+    row.appendChild(badge);
+  }
+}
+
+function syncMonitorSelection() {
+  document.querySelectorAll('.monitor-btn').forEach(btn => {
+    const pt = btn.title;
+    btn.classList.toggle('selected', pt === currentPagetype && currentPagetype !== '');
   });
 }
 
@@ -1274,6 +1256,8 @@ function updateDragdropScale() {
   if (!infEl || !area) return;
   area.style.transform = `scale(${infEl.offsetWidth / REF_WIDTH})`;
 }
+
+
 function notifyHeight() {}
 
 const IMGS = {
@@ -1566,9 +1550,12 @@ async function generateAISummary() {
 
   const reductionPct = (calc._red_pct_raw * 100).toFixed(1);
   const scopeContext = aiWebsite === SUMMARY_KEY ? `all ${numSites} websites combined` : scopeLabel;
+
   const metricParts = [];
-  if (currentLines.length) metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
-  if (savingLines.length)  metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
+  if (currentLines.length)
+    metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
+  if (savingLines.length)
+    metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
   metricParts.push(`REDUCTION POTENTIAL (centre gauge, always visible):\n- ${reductionPct}% reduction potential`);
   const metricsBlock = metricParts.join('\n\n');
 
@@ -1677,6 +1664,10 @@ async function captureCanvas() {
   const exportTarget = document.getElementById('export-target');
   const bgImg        = document.getElementById('bg-img');
   emptySlots.forEach(s => s.classList.add('export-hide'));
+
+  // Export előtt skála frissítés
+  updateDragdropScale();
+
   const prevRadius  = exportTarget.style.borderRadius;
   const prevOutline = exportTarget.style.outline;
   const prevBgR     = bgImg.style.borderRadius;
@@ -1690,6 +1681,8 @@ async function captureCanvas() {
   exportTarget.style.outline      = prevOutline;
   bgImg.style.borderRadius        = prevBgR;
   emptySlots.forEach(s => s.classList.remove('export-hide'));
+
+
   return canvas;
 }
 
@@ -1700,7 +1693,7 @@ function exportTimestamp() {
 }
 function exportFilename(ext) {
   const lang = (C.lang_code || 'hu').replace('-', '_');
-  return `infografika_${lang}_${exportTimestamp()}.${ext}`;
+  return `infographic_${lang}_${exportTimestamp()}.${ext}`;
 }
 
 async function exportPNG() {
