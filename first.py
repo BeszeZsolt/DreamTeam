@@ -9,7 +9,6 @@ import uuid
 from geopy.geocoders import Nominatim
 from deep_translator import GoogleTranslator
 
-
 st.set_page_config(page_title="Carbon Crane", page_icon="🌿", layout="wide")
 
 # ── Statikus konstansok ───────────────────────────────────────────────────────
@@ -251,7 +250,6 @@ with open("drag_drop.html", "r") as f:
     html = f.read()
 
 # ── PNG kártyák + monitor képek base64 injektálása ──────────────────────────────
-
 card_images = [
     "sima_tarolo_bal", "sima_tarolo_jobb",
     "sima_fent_bal", "sima_fent_jobb",
@@ -335,8 +333,6 @@ html = html.replace("{{PAGETYPES}}",    safe_json(pagetypes_map))
 html = html.replace("{{CONSTANTS}}",    safe_json(constants))
 html = html.replace("{{GROQ_API_KEY}}", groq_api_key)
 
-components.html(html, height=840, scrolling=True)
-
 # ── Távolságkalkulátor ────────────────────────────────────────────────────────
 
 st.divider()
@@ -381,3 +377,6 @@ if st.session_state["geocoded_cities"] is not None:
     addr2    = g2_local.address if g2_local else cities["city2_en"]
     st.success(f"Road distance: **{dist_km:,.0f} km** – this is now the reference route!")
     st.caption(f"({addr1}  →  {addr2})")
+
+st.divider()
+components.html(html, height=1200, scrolling=False)
