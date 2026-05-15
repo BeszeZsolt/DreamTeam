@@ -19,8 +19,6 @@ body {
   box-sizing: border-box;
 }
 
-
-
 .toolbar {
   width: 100%;
   max-width: 1200px;
@@ -152,6 +150,7 @@ body {
   width: 100%;
   border-radius: 8px;
   outline: 3px solid #c8bfa8;
+  font-size: 0;
 }
 .bg-img {
   width: 100%;
@@ -176,7 +175,7 @@ body {
   justify-content: flex-start;
   color: #2d5a1b;
   font-weight: 700;
-  font-size: 1.8vw;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   z-index: 10;
@@ -191,7 +190,7 @@ body {
   top: 13%; left: 11%; right: 25%; height: 5.5%;
   color: white;
   font-weight: 600;
-  font-size: 0.95vw;
+  font-size: 8px;
   z-index: 10;
 }
 .infog-pv-label {
@@ -205,12 +204,11 @@ body {
   justify-content: flex-start;
   color: white;
   font-weight: 600;
-  font-size: 1.05vw;
+  font-size: 9px;
   white-space: normal;
   z-index: 10;
 }
 
-/* ── Monitor gombok ── */
 .monitors-row {
   position: absolute;
   top: 15%;
@@ -246,12 +244,12 @@ body {
 }
 .monitor-btn .monitor-label {
   position: absolute;
-  top: 56%;
+  top: 57%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
   font-weight: 700;
-  font-size: 11px;
+  font-size: clamp(7px, 1.4%, 13px);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #ffffff;
@@ -267,7 +265,7 @@ body {
   text-align: center;
 }
 .monitor-btn.selected {
-  transform: scale(1.12) translateY(-4%);
+  transform: scale(1.22) translateY(-5%);
   z-index: 20;
 }
 .monitor-btn:hover:not(.selected) {
@@ -280,7 +278,7 @@ body {
   color: #fff;
   font-family: 'Barlow Condensed', 'Segoe UI', sans-serif;
   font-weight: 700;
-  font-size: 1.1vw;
+  font-size: clamp(8px, 1.1%, 14px);
   padding: 3px 8px;
   border-radius: 6px;
   white-space: nowrap;
@@ -288,11 +286,39 @@ body {
   letter-spacing: 0.04em;
 }
 
+.pdf-template-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: auto;
+}
+.pdf-template-label {
+  color: #3a4a3a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.pdf-template-select {
+  background: #f5f2ec;
+  color: #2d3a2d;
+  border: 1px solid #c8bfa8;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+}
 .export-bar {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 .export-btn {
   display: flex;
@@ -503,7 +529,6 @@ body {
   line-height: 1.2;
 }
 
-/* ── AI Summary szekció ── */
 .ai-section {
   width: 100%;
   max-width: 1200px;
@@ -755,6 +780,10 @@ body {
 </head>
 <body>
 
+<img id="tpl-web"   src="{{TPL_WEB}}"   style="position:absolute;visibility:hidden;width:0;height:0;" crossorigin="anonymous">
+<img id="tpl-bank"  src="{{TPL_BANK}}"  style="position:absolute;visibility:hidden;width:0;height:0;" crossorigin="anonymous">
+<img id="tpl-hotel" src="{{TPL_HOTEL}}" style="position:absolute;visibility:hidden;width:0;height:0;" crossorigin="anonymous">
+
 <div class="toolbar" id="toolbar">
   <div class="toolbar-group">
     <span class="toolbar-label">Website:</span>
@@ -783,10 +812,9 @@ body {
       <div class="infog-filter-label" id="infog-filter-label"></div>
       <div class="infog-subtitle"     id="infog-subtitle"></div>
 
-      <!-- ── Monitor gombok ── -->
       <div class="monitors-row" id="monitors-row"></div>
 
-      <div class="infog-pv-label"     id="infog-pv-label"></div>
+      <div class="infog-pv-label" id="infog-pv-label"></div>
       <div class="overlay">
         <div class="dragdrop-area" id="dragdrop-area">
           <div class="panel panel-side">
@@ -815,6 +843,15 @@ body {
     </div>
 
     <div class="export-bar">
+      <div class="pdf-template-group">
+        <span class="pdf-template-label">PDF background:</span>
+        <select id="pdf-template-select" class="pdf-template-select" onchange="saveStateNow()">
+          <option value="none" selected>None</option>
+          <option value="web">Web</option>
+          <option value="bank">Bank</option>
+          <option value="hotel">Hotel</option>
+        </select>
+      </div>
       <button class="export-btn pdf" onclick="exportPDF()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         PDF export
@@ -832,7 +869,6 @@ body {
   </div>
 </div>
 
-<!-- ── AI Summary szekció ── -->
 <div class="ai-section" id="ai-section">
   <div class="ai-section-header">
     <div>
@@ -858,7 +894,7 @@ body {
     <div class="ai-result" id="ai-result">
       <div class="ai-result-meta" id="ai-result-meta"></div>
       <div class="ai-result-text" id="ai-result-text"></div>
-      <div class="ai-result-info">The summary will automatically be included in the PDF export. · AI-generated content may contain errors. Aways verify key figures against the infographic.</div>
+      <div class="ai-result-info">The summary will automatically be included in the PDF export. · AI-generated content may contain errors. Always verify key figures against the infographic.</div>
     </div>
   </div>
 </div>
@@ -872,30 +908,33 @@ body {
   font-family: 'Barlow', 'Segoe UI', Arial, sans-serif;
   color: #1a1a1a;
   box-sizing: border-box;
+  overflow: hidden;
 ">
-  <div id="sum-header" style="
-    background: #2d6a4f;
-    color: white;
-    padding: 18px 40px;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  ">Carbon Crane – Summary Report</div>
-  <div style="padding: 28px 40px 40px 40px;">
-    <div id="sum-meta" style="
-      color: #666;
-      font-size: 13px;
-      margin-bottom: 14px;
-      letter-spacing: 0.01em;
-    "></div>
-    <div style="border-top: 1.5px solid #2d6a4f; margin-bottom: 22px;"></div>
-    <div id="sum-body" style="
-      font-size: 15px;
-      line-height: 1.75;
-      color: #222;
-    "></div>
-    <div style="margin-top: 40px; font-size: 9px; color: #bbb; text-align: center;">
-      Generated by Carbon Crane &middot; Powered by Groq Llama 3.3 70B
+  <div>
+    <div id="sum-header" style="
+      background: #2d6a4f;
+      color: white;
+      padding: 18px 40px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    ">Carbon Crane – Summary Report</div>
+    <div style="padding: 28px 40px 40px 40px;">
+      <div id="sum-meta" style="
+        color: #666;
+        font-size: 13px;
+        margin-bottom: 14px;
+        letter-spacing: 0.01em;
+      "></div>
+      <div style="border-top: 1.5px solid #2d6a4f; margin-bottom: 22px;"></div>
+      <div id="sum-body" style="
+        font-size: 15px;
+        line-height: 1.75;
+        color: #222;
+      "></div>
+      <div style="margin-top: 40px; font-size: 9px; color: #bbb; text-align: center;">
+        Generated by Carbon Crane &middot; Powered by Groq Llama 3.3 70B
+      </div>
     </div>
   </div>
 </div>
@@ -925,7 +964,6 @@ body {
 </div>
 
 <script>
-// ── Python által injektált adatok ─────────────────────────────────────────────
 let rawStats  = {};
 let labels    = {};
 let websites  = [];
@@ -939,13 +977,11 @@ try { websites  = JSON.parse(`{{WEBSITES}}`);   } catch(e) {}
 try { pagetypes = JSON.parse(`{{PAGETYPES}}`);  } catch(e) {}
 try { C         = JSON.parse(`{{CONSTANTS}}`);  } catch(e) {}
 
-// ── API konfiguráció ──────────────────────────────────────────────────────────
 const GROQ_API_KEY = '{{GROQ_API_KEY}}';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 const SUMMARY_KEY  = C.summary_key || 'Összesítő';
 
-// ── Monitor képek (first.py injektálja base64-re, mint a többi kártyát) ───────
 const MONITOR_IMGS = [
   'cards/monitor1.png',
   'cards/monitor2.png',
@@ -953,7 +989,6 @@ const MONITOR_IMGS = [
   'cards/monitor4.png',
 ];
 
-// ── SessionStorage ────────────────────────────────────────────────────────────
 try {
   const storedSessionId  = window.sessionStorage.getItem('cc_session_id');
   const currentSessionId = C.session_id || null;
@@ -966,7 +1001,6 @@ try {
   }
 } catch(e) {}
 
-// ── Toolbar állapot ───────────────────────────────────────────────────────────
 let currentWebsite  = savedPanel?.website  || websites[0] || '';
 let currentPagetype = savedPanel?.pagetype !== undefined ? savedPanel.pagetype : '';
 let currentPV       = savedPanel?.pv       || C.default_pv || 120000000;
@@ -986,7 +1020,7 @@ if (savedPanel?.trayLeft) {
   };
 }
 
-// ── AI summary állapot ────────────────────────────────────────────────────────
+
 let aiSummaryText   = '';
 let aiSummaryMeta   = {};
 let summarySnapshot = null;
@@ -998,6 +1032,8 @@ function getSummarySnapshot() {
     currentPV,
     [...panelState.left].join(','),
     [...panelState.right].join(','),
+    [...panelState.trayLeft].join(','),
+    [...panelState.trayRight].join(','),
   ].join('|');
 }
 
@@ -1007,17 +1043,18 @@ function checkStaleSummary() {
   document.getElementById('ai-stale-warning').classList.toggle('visible', stale);
 }
 
-// ── State mentés ──────────────────────────────────────────────────────────────
 let _stateDebounceTimer = null;
 function buildState() {
+  const pdfBg = document.getElementById('pdf-template-select')?.value || 'none';
   return {
-    trayLeft:  panelState.trayLeft,
-    trayRight: panelState.trayRight,
-    left:      panelState.left,
-    right:     panelState.right,
-    website:   currentWebsite,
-    pagetype:  currentPagetype,
-    pv:        currentPV,
+    trayLeft:   panelState.trayLeft,
+    trayRight:  panelState.trayRight,
+    left:       panelState.left,
+    right:      panelState.right,
+    website:    currentWebsite,
+    pagetype:   currentPagetype,
+    pv:         currentPV,
+    pdfBackground: pdfBg,
   };
 }
 function saveStateNow() {
@@ -1028,12 +1065,10 @@ function sendStateToParent() {
   _stateDebounceTimer = setTimeout(saveStateNow, 300);
 }
 
-// ── Számformázás ──────────────────────────────────────────────────────────────
 function huFormat(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
 
-// ── Számítások ────────────────────────────────────────────────────────────────
 function calcFromRaw(raw, pv) {
   const kg_co2   = raw.em_avg * pv / 1000;
   const kg_saved = kg_co2 * raw.red_pct;
@@ -1073,7 +1108,6 @@ function getCurrentCalc() {
 function isPagetypeView() { return !!currentPagetype; }
 function isSummaryView()  { return currentWebsite === SUMMARY_KEY || !currentWebsite; }
 
-// ── PV input ──────────────────────────────────────────────────────────────────
 function formatPVDisplay(val) {
   return Math.round(val).toLocaleString('hu-HU').replace(/,/g, ' ');
 }
@@ -1093,7 +1127,6 @@ function onPVBlur(e) {
   checkStaleSummary();
 }
 
-// ── Toolbar ───────────────────────────────────────────────────────────────────
 function buildWebsiteSelector() {
   const el = document.getElementById('sel-website');
   el.innerHTML = '';
@@ -1130,6 +1163,7 @@ function onWebsiteChange(website) {
   currentWebsite = website; currentPagetype = '';
   buildPagetypeSelector(website);
   renderMonitors();
+  scaleOverlayFonts();
   updateValues(); saveStateNow();
   checkStaleSummary();
 }
@@ -1140,35 +1174,27 @@ function onPagetypeChange(pagetype) {
   checkStaleSummary();
 }
 
-// ── Monitor logika ────────────────────────────────────────────────────────────
-
 function renderMonitors() {
   const row = document.getElementById('monitors-row');
   row.innerHTML = '';
-
   const key    = isSummaryView() ? SUMMARY_KEY : currentWebsite;
   const allPts = pagetypes[key] || [];
   if (allPts.length === 0) return;
-
   const pts   = allPts.slice(0, 4);
   const extra = allPts.length - 4;
-
   pts.forEach((pt, i) => {
     const btn = document.createElement('button');
     btn.className = 'monitor-btn' + (pt === currentPagetype ? ' selected' : '');
     btn.title = pt;
-
     const img = document.createElement('img');
     img.src = MONITOR_IMGS[i] || MONITOR_IMGS[0];
     img.alt = pt;
     img.crossOrigin = 'anonymous';
     btn.appendChild(img);
-
     const label = document.createElement('span');
     label.className = 'monitor-label';
     label.textContent = pt;
     btn.appendChild(label);
-
     btn.addEventListener('click', () => {
       if (currentPagetype === pt) {
         currentPagetype = '';
@@ -1177,15 +1203,13 @@ function renderMonitors() {
       }
       document.getElementById('sel-pagetype').value = currentPagetype;
       syncMonitorSelection();
+      scaleOverlayFonts();
       updateValues();
       saveStateNow();
       checkStaleSummary();
     });
-
     row.appendChild(btn);
   });
-
-  // Ha több mint 4 aloldal van: (+N) jelző a sor végén
   if (extra > 0) {
     const badge = document.createElement('div');
     badge.className = 'monitor-extra-badge';
@@ -1202,7 +1226,6 @@ function syncMonitorSelection() {
   });
 }
 
-// ── Szöveges overlay-ek ───────────────────────────────────────────────────────
 function tpl(template) {
   const args = Array.prototype.slice.call(arguments, 1);
   let i = 0;
@@ -1236,7 +1259,6 @@ function updateTexts() {
   document.getElementById('infog-pv-label').textContent     = buildPVLabel();
 }
 
-// ── Kártya értékek ────────────────────────────────────────────────────────────
 const BASE_SCALE = 0.57;
 const DIMS = {
   bal:  { tarolo: {w:130,h:50}, fent: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, kozep: {w:Math.round(320*BASE_SCALE),h:Math.round(97*BASE_SCALE)}, lent: {w:Math.round(353*BASE_SCALE),h:Math.round(104*BASE_SCALE)}, lent_egyedul: {w:Math.round(353*BASE_SCALE),h:Math.round(104*BASE_SCALE)} },
@@ -1251,6 +1273,30 @@ function updateDragdropScale() {
   area.style.transform = `scale(${infEl.offsetWidth / REF_WIDTH})`;
 }
 
+const FONT_REF_WIDTH = 900;
+const FONT_MIN_WIDTH = 500;
+
+function scaleOverlayFonts() {
+  const infEl = document.getElementById('export-target');
+  if (!infEl) return;
+  const w     = Math.max(infEl.offsetWidth, FONT_MIN_WIDTH);
+  const ratio = w / FONT_REF_WIDTH;
+  const filterLabel = document.getElementById('infog-filter-label');
+  const subtitle    = document.getElementById('infog-subtitle');
+  const pvLabel     = document.getElementById('infog-pv-label');
+  if (filterLabel) filterLabel.style.fontSize = (28 * ratio) + 'px';
+  if (subtitle)    subtitle.style.fontSize    = (11 * ratio) + 'px';
+  if (pvLabel)     pvLabel.style.fontSize     = (15 * ratio) + 'px';
+  const monitorW = Math.max(infEl.offsetWidth, FONT_MIN_WIDTH) * 0.23;
+  const monRatio = monitorW / (FONT_REF_WIDTH * 0.23);
+  document.querySelectorAll('.monitor-label').forEach(el => {
+    el.style.fontSize = Math.max(6, Math.round(11 * monRatio)) + 'px';
+    el.style.padding  = Math.max(1, Math.round(2 * monRatio)) + 'px ' + Math.max(3, Math.round(7 * monRatio)) + 'px';
+  });
+  document.querySelectorAll('.monitor-extra-badge').forEach(el => {
+    el.style.fontSize = Math.max(7, Math.round(12 * monRatio)) + 'px';
+  });
+}
 
 function notifyHeight() {}
 
@@ -1310,7 +1356,6 @@ function updateValues() {
   updateTexts();
 }
 
-// ── Panel renderelés ──────────────────────────────────────────────────────────
 function getState(panelId, idx, total) {
   if (total === 1) return 'lent_egyedul';
   if (idx === 0)   return 'lent';
@@ -1323,6 +1368,7 @@ function getFrom(id) {
   if (panelState.trayRight.includes(id)) return 'trayRight';
   if (panelState.left.includes(id))      return 'left';
   if (panelState.right.includes(id))     return 'right';
+  return null;
 }
 function removeFromState(id, from) { panelState[from] = panelState[from].filter(c => c !== id); }
 
@@ -1334,6 +1380,7 @@ function render() {
   updateMiddle();
   updateValues();
   updateDragdropScale();
+  scaleOverlayFonts();
   setTimeout(notifyHeight, 150);
   sendStateToParent();
   checkStaleSummary();
@@ -1466,7 +1513,9 @@ function makeCard(id, context, idx, total) {
   }
   card.ondragstart = e => {
     e.stopPropagation();
-    dragged = { id, from: getFrom(id) };
+    const from = getFrom(id);
+    if (!from) return;
+    dragged = { id, from };
     setTimeout(() => card.classList.add('dragging'), 0);
   };
   card.ondragend = () => {
@@ -1486,7 +1535,6 @@ function updateMiddle() {
   document.getElementById('middle').src = IMGS.ora[key];
 }
 
-// ── AI Summary generálás ──────────────────────────────────────────────────────
 async function generateAISummary() {
   const aiWebsite  = currentWebsite;
   const aiPagetype = currentPagetype;
@@ -1527,35 +1575,42 @@ async function generateAISummary() {
 
   const currentLines = [];
   if (activeLeft.includes('kg_co2'))
-    currentLines.push(`- Total CO2 emission: ${fmt(calc._kg_co2_raw)} kg CO2e`);
+    currentLines.push(`- Total CO2 emission (current footprint): ${fmt(calc._kg_co2_raw)} kg CO2e`);
   if (activeLeft.includes('wash'))
-    currentLines.push(`- Equivalent laundry loads: ${fmt(calc._wash_raw)}`);
+    currentLines.push(`- Equivalent laundry loads (current footprint analogy): ${fmt(calc._wash_raw)}`);
   if (activeLeft.includes('bp_paris'))
-    currentLines.push(`- Equivalent driving distance: ${fmt(calc._bp_km_raw)} km` +
+    currentLines.push(`- Equivalent driving distance (current footprint analogy): ${fmt(calc._bp_km_raw)} km` +
       ` — that is ${fmt(calc._bp_trips_raw)} one-way drives (${routeLabel}, ${ref_km} km each)`);
 
   const savingLines = [];
   if (activeRight.includes('kg_saved'))
-    savingLines.push(`- Potential CO2 saving: ${fmt(calc._kg_saved_raw)} kg CO2e`);
+    savingLines.push(`- CO2 reduction potential (amount that COULD be saved if optimisation is applied): ${fmt(calc._kg_saved_raw)} kg CO2e`);
   if (activeRight.includes('kwh'))
-    savingLines.push(`- Potential energy saving: ${fmt(calc._kwh_raw)} kWh`);
+    savingLines.push(`- Energy reduction potential (amount that COULD be saved through optimisation): ${fmt(calc._kwh_raw)} kWh`);
   if (activeRight.includes('house'))
-    savingLines.push(`- The energy saving could power ${fmt(calc._house_raw)} average households for a full year`);
+    savingLines.push(`- The potential energy saving from optimisation could power ${fmt(calc._house_raw)} average households for a full year (this is what COULD be saved, not current consumption)`);
 
   const reductionPct = (calc._red_pct_raw * 100).toFixed(1);
   const scopeContext = aiWebsite === SUMMARY_KEY ? `all ${numSites} websites combined` : scopeLabel;
 
   const metricParts = [];
   if (currentLines.length)
-    metricParts.push('CURRENT FOOTPRINT (left panel):\n' + currentLines.join('\n'));
+    metricParts.push('CURRENT FOOTPRINT — left panel (these are the ACTUAL, EXISTING emissions):\n' + currentLines.join('\n'));
   if (savingLines.length)
-    metricParts.push('SAVINGS POTENTIAL (right panel):\n' + savingLines.join('\n'));
-  metricParts.push(`REDUCTION POTENTIAL (centre gauge, always visible):\n- ${reductionPct}% reduction potential`);
+    metricParts.push(
+      'REDUCTION POTENTIAL — right panel (these are NOT current figures; they show what COULD be reduced/saved if website optimisation is implemented — treat them strictly as potential, not reality):\n'
+      + savingLines.join('\n')
+    );
+  metricParts.push(`REDUCTION POTENTIAL GAUGE (centre, always visible):\n- ${reductionPct}% overall reduction potential — the share of current emissions that optimisation could eliminate`);
   const metricsBlock = metricParts.join('\n\n');
 
   const routeRule = activeLeft.includes('bp_paris')
     ? `- The reference route (${routeLabel}) is a distance metaphor — mention it once at most, casually`
     : `- Do NOT mention any route, distance, driving or car trips — that data is not on the infographic`;
+
+  const rightPanelRule = activeRight.length > 0
+    ? `- CRITICAL — RIGHT PANEL framing: the right-panel values are REDUCTION/SAVING POTENTIALS — they describe what COULD BE ACHIEVED through optimisation, not what currently exists. Always write them as conditional ("could save", "potential saving of", "if optimised") — never as established facts`
+    : '';
 
   const totalActiveCards = activeLeft.length + activeRight.length;
   const paragraphCount = totalActiveCards === 0 ? 1 : totalActiveCards <= 2 ? 2 : 3;
@@ -1569,7 +1624,7 @@ async function generateAISummary() {
     ? `- If the data alone is too sparse to fill the text naturally, you may add 1–2 general sentences about the broader environmental significance of reducing digital carbon footprints — but these must contain no numbers, no invented facts, and no calls to action`
     : ``;
 
-  const prompt = `You are a sustainability copywriter for Carbon Crane, a tool that measures the carbon footprint of websites — every page view consumes energy, and at scale that adds up.
+  const prompt = `You are a sustainability copywriter for Carbon Crane, a service that measures the carbon footprint of websites — every page view consumes energy, and at scale that adds up.
 
 IMPORTANT: Write exclusively in ${outLang}.
 
@@ -1584,8 +1639,9 @@ Rules:
 - Analogies as comparisons, not labels ("powers X households" not "the household figure")
 - End with a concrete forward-looking sentence anchored to the ${reductionPct}% reduction potential
 ${sustainabilityNote}
-- Keep untranslated: ${scopeLabel}${aiPagetype ? ', ' + ptPrompt : ''}
+- Keep untranslated only proper names: ${scopeLabel}${aiPagetype ? ', ' + ptPrompt : ''} — do NOT keep metric names or labels in English
 ${routeRule}
+${rightPanelRule}
 
 METRICS:
 ${metricsBlock}`.trim();
@@ -1604,7 +1660,7 @@ ${metricsBlock}`.trim();
         messages: [
           {
             role: 'system',
-            content: `You are a sustainability copywriter for Carbon Crane, a tool that measures the carbon footprint of websites. You write short, data-driven summaries. You never invent numbers, never generalise beyond the data, never repeat a fact, and never add advice or calls to action. You write exclusively in ${outLang}.`
+            content: `You are a sustainability copywriter for Carbon Crane, a service that measures the carbon footprint of websites. You write short, data-driven summaries. You never invent numbers, never generalise beyond the data, never repeat a fact, and never add advice or calls to action. When referencing right-panel values (reduction potential), you always frame them as conditional possibilities ("could save", "potential saving"), never as existing facts. You write exclusively in ${outLang}.`
           },
           { role: 'user', content: prompt }
         ],
@@ -1643,7 +1699,26 @@ ${metricsBlock}`.trim();
   }
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
+function loadTemplateImage() {
+  const sel  = document.getElementById('pdf-template-select');
+  const name = sel ? sel.value : 'none';
+  if (!name || name === 'none') return Promise.resolve(null);
+
+  const el = document.getElementById('tpl-' + name);
+  if (!el) return Promise.resolve(null);
+
+  const src = el.src || '';
+  if (!src || src.indexOf('data:') !== 0) return Promise.resolve(null);
+
+  if (el.complete && el.naturalWidth > 0) return Promise.resolve(el);
+
+  return new Promise((resolve) => {
+    el.onload  = () => resolve(el.naturalWidth > 0 ? el : null);
+    el.onerror = () => resolve(null);
+    el.src = src;
+  });
+}
+
 function showExportOverlay(msg) {
   document.getElementById('export-msg').textContent = msg;
   document.getElementById('export-overlay').classList.add('visible');
@@ -1652,15 +1727,32 @@ function hideExportOverlay() {
   document.getElementById('export-overlay').classList.remove('visible');
 }
 
-async function captureCanvas() {
+// Exportáláshoz rendereli az infografikát: átmenetileg 1200px szélességre állítja,
+// eltünteti az üres slotokat, majd visszaállít mindent.
+async function captureCanvas(overlayMsg) {
+  if (overlayMsg) showExportOverlay(overlayMsg);
   await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
-  const emptySlots   = document.querySelectorAll('.empty-slot');
+
+  const EXPORT_W   = 1200;
+  const emptySlots = document.querySelectorAll('.empty-slot');
   const exportTarget = document.getElementById('export-target');
   const bgImg        = document.getElementById('bg-img');
+  const wrapper      = exportTarget.parentElement;
+
   emptySlots.forEach(s => s.classList.add('export-hide'));
 
-  // Export előtt skála frissítés
+  const prevFlex  = wrapper.style.flex;
+  const prevW     = wrapper.style.width;
+  const prevMinW  = wrapper.style.minWidth;
+  wrapper.style.flex    = 'none';
+  wrapper.style.width   = EXPORT_W + 'px';
+  wrapper.style.minWidth = EXPORT_W + 'px';
+
+  const savedFonts = _saveFontSizes();
+  _applyFontSizes(EXPORT_W);
   updateDragdropScale();
+
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   const prevRadius  = exportTarget.style.borderRadius;
   const prevOutline = exportTarget.style.outline;
@@ -1668,16 +1760,63 @@ async function captureCanvas() {
   exportTarget.style.borderRadius = '0';
   exportTarget.style.outline      = 'none';
   bgImg.style.borderRadius        = '0';
+
   const canvas = await html2canvas(exportTarget, {
-    useCORS: true, allowTaint: false, scale: 4, backgroundColor: null, logging: false,
+    useCORS: true, allowTaint: false, scale: 4, backgroundColor: '#ffffff', logging: false,
   });
+
   exportTarget.style.borderRadius = prevRadius;
   exportTarget.style.outline      = prevOutline;
   bgImg.style.borderRadius        = prevBgR;
+  wrapper.style.flex    = prevFlex;
+  wrapper.style.width   = prevW;
+  wrapper.style.minWidth = prevMinW;
+  _restoreFontSizes(savedFonts);
+  updateDragdropScale();
+  scaleOverlayFonts();
+
   emptySlots.forEach(s => s.classList.remove('export-hide'));
-
-
   return canvas;
+}
+
+function _saveFontSizes() {
+  return {
+    filter:   document.getElementById('infog-filter-label')?.style.fontSize,
+    subtitle: document.getElementById('infog-subtitle')?.style.fontSize,
+    pv:       document.getElementById('infog-pv-label')?.style.fontSize,
+    labels:   Array.from(document.querySelectorAll('.monitor-label')).map(el => el.style.fontSize),
+    badges:   Array.from(document.querySelectorAll('.monitor-extra-badge')).map(el => el.style.fontSize),
+  };
+}
+function _applyFontSizes(w) {
+  const ratio = Math.max(w, FONT_MIN_WIDTH) / FONT_REF_WIDTH;
+  const f = document.getElementById('infog-filter-label');
+  const s = document.getElementById('infog-subtitle');
+  const p = document.getElementById('infog-pv-label');
+  if (f) f.style.fontSize = (28 * ratio) + 'px';
+  if (s) s.style.fontSize = (11 * ratio) + 'px';
+  if (p) p.style.fontSize = (15 * ratio) + 'px';
+  const monRatio = (w * 0.23) / (FONT_REF_WIDTH * 0.23);
+  document.querySelectorAll('.monitor-label').forEach(el => {
+    el.style.fontSize = Math.max(6, Math.round(11 * monRatio)) + 'px';
+  });
+  document.querySelectorAll('.monitor-extra-badge').forEach(el => {
+    el.style.fontSize = Math.max(7, Math.round(12 * monRatio)) + 'px';
+  });
+}
+function _restoreFontSizes(saved) {
+  const f = document.getElementById('infog-filter-label');
+  const s = document.getElementById('infog-subtitle');
+  const p = document.getElementById('infog-pv-label');
+  if (f && saved.filter)   f.style.fontSize = saved.filter;
+  if (s && saved.subtitle) s.style.fontSize = saved.subtitle;
+  if (p && saved.pv)       p.style.fontSize = saved.pv;
+  document.querySelectorAll('.monitor-label').forEach((el, i) => {
+    if (saved.labels[i]) el.style.fontSize = saved.labels[i];
+  });
+  document.querySelectorAll('.monitor-extra-badge').forEach((el, i) => {
+    if (saved.badges[i]) el.style.fontSize = saved.badges[i];
+  });
 }
 
 function exportTimestamp() {
@@ -1691,9 +1830,8 @@ function exportFilename(ext) {
 }
 
 async function exportPNG() {
-  showExportOverlay('Saving image...');
   try {
-    const canvas = await captureCanvas();
+    const canvas = await captureCanvas('Saving image...');
     const link   = document.createElement('a');
     link.download = exportFilename('png');
     link.href     = canvas.toDataURL('image/png');
@@ -1733,46 +1871,119 @@ async function exportPDF() {
 }
 
 async function doExportPDF() {
-  showExportOverlay('Saving PDF...');
   try {
-    const canvas  = await captureCanvas();
+    const CAPTURE_SCALE = 4;
+    const canvas  = await captureCanvas('Saving PDF...');
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    const PX_TO_MM = 25.4 / (96 * 4);
-    const pdfW = canvas.width  * PX_TO_MM;
-    const pdfH = canvas.height * PX_TO_MM;
+
+    const pageW = canvas.width  / CAPTURE_SCALE;
+    const pageH = canvas.height / CAPTURE_SCALE;
+
     const pdf = new jsPDF({
-      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-      unit: 'mm', format: [pdfW, pdfH],
+      orientation: pageW >= pageH ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [pageW, pageH],
+      compress: true,
     });
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH, '', 'FAST');
 
     if (aiSummaryText && aiSummaryText.trim()) {
+      const A4_W_PX = 794;
+      const A4_H_PX = 1123;
+      const SCALE   = 2;
+      const CW      = A4_W_PX * SCALE;
+      const CH      = A4_H_PX * SCALE;
+
+      pdf.addPage([A4_W_PX, A4_H_PX], 'portrait');
+
+      const pageCanvas  = document.createElement('canvas');
+      pageCanvas.width  = CW;
+      pageCanvas.height = CH;
+      const ctx = pageCanvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CW, CH);
+
+      const tplImg = await loadTemplateImage();
+      if (tplImg && tplImg.naturalWidth > 0) {
+        const sc = Math.max(CW / tplImg.naturalWidth, CH / tplImg.naturalHeight);
+        ctx.globalAlpha = 0.12;
+        ctx.drawImage(
+          tplImg,
+          (CW - tplImg.naturalWidth  * sc) / 2,
+          (CH - tplImg.naturalHeight * sc) / 2,
+          tplImg.naturalWidth  * sc,
+          tplImg.naturalHeight * sc
+        );
+        ctx.globalAlpha = 1.0;
+      }
+
+      const HDR_H = 40 * SCALE;
+      ctx.fillStyle = '#2d6a4f';
+      ctx.fillRect(0, 0, CW, HDR_H);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${18 * SCALE}px Barlow, sans-serif`;
+      ctx.fillText('Carbon Crane – Summary Report', 46 * SCALE, 27 * SCALE);
+
       const today    = new Date().toISOString().slice(0, 10);
       const scopeTxt = aiSummaryMeta.website === SUMMARY_KEY
-        ? 'All websites'
-        : (aiSummaryMeta.website || 'All websites');
+        ? 'All websites' : (aiSummaryMeta.website || 'All websites');
       const ptTxt = aiSummaryMeta.pagetype || 'All pages';
-      document.getElementById('sum-meta').textContent =
-        `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`;
-      document.getElementById('sum-body').innerHTML = aiSummaryText
-        .split(/\n\n+/)
-        .filter(p => p.trim())
-        .map(p => `<p style="margin:0 0 14px 0;">${p.trim().replace(/\n/g, ' ')}</p>`)
-        .join('');
-      await document.fonts.ready;
-      const sumEl     = document.getElementById('summary-page');
-      const sumCanvas = await html2canvas(sumEl, {
-        useCORS: true, allowTaint: false, scale: 2, backgroundColor: '#ffffff', logging: false,
-        width: 794, height: sumEl.scrollHeight, windowWidth: 794,
-      });
-      const sumImgData = sumCanvas.toDataURL('image/png');
-      const sumPageW   = 210;
-      const sumPageH   = 297;
-      const imgH       = sumPageW * sumCanvas.height / sumCanvas.width;
-      pdf.addPage([sumPageW, sumPageH], 'portrait');
-      pdf.addImage(sumImgData, 'PNG', 0, 0, sumPageW, Math.min(imgH, sumPageH));
+
+      ctx.fillStyle = '#666666';
+      ctx.font = `${14 * SCALE}px Barlow, sans-serif`;
+      ctx.fillText(
+        `Scope: ${scopeTxt}  ·  Page type: ${ptTxt}  ·  ${today}`,
+        40 * SCALE, HDR_H + 30 * SCALE
+      );
+
+      ctx.strokeStyle = '#2d6a4f';
+      ctx.lineWidth   = 1.5 * SCALE;
+      ctx.beginPath();
+      ctx.moveTo(40 * SCALE, HDR_H + 46 * SCALE);
+      ctx.lineTo(CW - 40 * SCALE, HDR_H + 46 * SCALE);
+      ctx.stroke();
+
+      ctx.fillStyle = '#222222';
+      ctx.font      = `${17 * SCALE}px Barlow, sans-serif`;
+      const lineH   = 30 * SCALE;
+      const marginX = 40 * SCALE;
+      const maxW    = CW - marginX * 2;
+      let   curY    = HDR_H + 80 * SCALE;
+
+      const paragraphs = aiSummaryText.split(/\n\n+/).filter(p => p.trim());
+      for (const para of paragraphs) {
+        const words = para.trim().replace(/\n/g, ' ').split(' ').filter(Boolean);
+        let line = '';
+        for (const word of words) {
+          const test = line ? line + ' ' + word : word;
+          if (ctx.measureText(test).width > maxW && line) {
+            ctx.fillText(line, marginX, curY);
+            curY += lineH;
+            line  = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) { ctx.fillText(line, marginX, curY); curY += lineH; }
+        curY += lineH * 0.5;
+      }
+
+      ctx.fillStyle = '#999999';
+      ctx.font      = `${12 * SCALE}px Barlow, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        'Generated by Carbon Crane · Powered by Groq Llama 3.3 70B',
+        CW / 2, CH - 20 * SCALE
+      );
+      ctx.textAlign = 'left';
+
+      pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, A4_W_PX, A4_H_PX);
     }
+
     pdf.save(exportFilename('pdf'));
   } catch(e) {
     alert('PDF export error: ' + e.message);
@@ -1781,7 +1992,6 @@ async function doExportPDF() {
   }
 }
 
-// ── AI Section toggle ─────────────────────────────────────────────────────────
 function toggleAiSection() {
   const body  = document.getElementById('ai-section-body');
   const arrow = document.getElementById('ai-toggle-arrow');
@@ -1798,7 +2008,6 @@ function openAiSection() {
   setTimeout(notifyHeight, 250);
 }
 
-// ── Inicializálás ─────────────────────────────────────────────────────────────
 buildWebsiteSelector();
 buildPagetypeSelector(currentWebsite);
 document.getElementById('pv-input').value = formatPVDisplay(currentPV);
@@ -1807,12 +2016,18 @@ const bgImg    = document.getElementById('bg-img');
 const fontReady = document.fonts.ready;
 const imgReady  = new Promise(resolve => { if (bgImg.complete) resolve(); else bgImg.onload = resolve; });
 Promise.all([fontReady, imgReady]).then(() => {
+  if (savedPanel?.pdfBackground) {
+    const sel = document.getElementById('pdf-template-select');
+    if (sel) sel.value = savedPanel.pdfBackground;
+  }
   render();
   renderMonitors();
+  scaleOverlayFonts();
 });
 
-const ro = new ResizeObserver(() => { updateDragdropScale(); setTimeout(notifyHeight, 150); });
+const ro = new ResizeObserver(() => { updateDragdropScale(); scaleOverlayFonts(); setTimeout(notifyHeight, 150); });
 ro.observe(document.getElementById('export-target'));
 </script>
+
 </body>
 </html>
