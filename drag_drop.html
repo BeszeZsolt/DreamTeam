@@ -1877,8 +1877,9 @@ async function doExportPDF() {
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
 
-    const pageW = canvas.width  / CAPTURE_SCALE;
-    const pageH = canvas.height / CAPTURE_SCALE;
+    const DISPLAY_SCALE = 2;
+    const pageW = canvas.width  / CAPTURE_SCALE / DISPLAY_SCALE;
+    const pageH = canvas.height / CAPTURE_SCALE / DISPLAY_SCALE;
 
     const pdf = new jsPDF({
       orientation: pageW >= pageH ? 'landscape' : 'portrait',
@@ -1890,8 +1891,8 @@ async function doExportPDF() {
     pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH, '', 'FAST');
 
     if (aiSummaryText && aiSummaryText.trim()) {
-      const A4_W_PX = 794;
-      const A4_H_PX = 1123;
+      const A4_W_PX = 794 / 2;
+      const A4_H_PX = 1123 / 2;
       const SCALE   = 2;
       const CW      = A4_W_PX * SCALE;
       const CH      = A4_H_PX * SCALE;
