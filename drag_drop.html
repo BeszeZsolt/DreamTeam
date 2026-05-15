@@ -1601,7 +1601,7 @@ async function generateAISummary() {
       'REDUCTION POTENTIAL — right panel (these are NOT current figures; they show what COULD be reduced/saved if website optimisation is implemented — treat them strictly as potential, not reality):\n'
       + savingLines.join('\n')
     );
-  metricParts.push(`REDUCTION POTENTIAL GAUGE (centre, always visible):\n- ${reductionPct}% overall reduction potential — the share of current emissions that optimisation could eliminate`);
+  metricParts.push(`OVERALL REDUCTION POTENTIAL (always shown):\n- ${reductionPct}% — the share of current emissions that could be eliminated through optimisation`);
   const metricsBlock = metricParts.join('\n\n');
 
   const routeRule = activeLeft.includes('bp_paris')
