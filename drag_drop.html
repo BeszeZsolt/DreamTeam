@@ -1727,8 +1727,6 @@ function hideExportOverlay() {
   document.getElementById('export-overlay').classList.remove('visible');
 }
 
-// Exportáláshoz rendereli az infografikát: átmenetileg 1200px szélességre állítja,
-// eltünteti az üres slotokat, majd visszaállít mindent.
 async function captureCanvas(overlayMsg) {
   if (overlayMsg) showExportOverlay(overlayMsg);
   await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
@@ -1873,11 +1871,11 @@ async function exportPDF() {
 async function doExportPDF() {
   try {
     const CAPTURE_SCALE = 4;
+    const DISPLAY_SCALE = 2;
     const canvas  = await captureCanvas('Saving PDF...');
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
 
-    const DISPLAY_SCALE = 2;
     const pageW = canvas.width  / CAPTURE_SCALE / DISPLAY_SCALE;
     const pageH = canvas.height / CAPTURE_SCALE / DISPLAY_SCALE;
 
@@ -1891,13 +1889,13 @@ async function doExportPDF() {
     pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH, '', 'FAST');
 
     if (aiSummaryText && aiSummaryText.trim()) {
-      const A4_W_PX = 794 / 2;
-      const A4_H_PX = 1123 / 2;
-      const SCALE   = 1;
+      const A4_W_PX = 794;
+      const A4_H_PX = 1123;
+      const SCALE   = 2;
       const CW      = A4_W_PX * SCALE;
       const CH      = A4_H_PX * SCALE;
 
-      pdf.addPage([A4_W_PX, A4_H_PX], 'portrait');
+      pdf.addPage([A4_W_PX / DISPLAY_SCALE, A4_H_PX / DISPLAY_SCALE], 'portrait');
 
       const pageCanvas  = document.createElement('canvas');
       pageCanvas.width  = CW;
@@ -1982,7 +1980,7 @@ async function doExportPDF() {
       );
       ctx.textAlign = 'left';
 
-      pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, A4_W_PX, A4_H_PX);
+      pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, A4_W_PX / DISPLAY_SCALE, A4_H_PX / DISPLAY_SCALE);
     }
 
     pdf.save(exportFilename('pdf'));
