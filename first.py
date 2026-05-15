@@ -1,11 +1,11 @@
 import pandas as pd
 import streamlit as st
 import json as json_lib
-import streamlit.components.v1 as components
 import base64
 import requests
 import time
 import uuid
+import os as _os
 from geopy.geocoders import Nominatim
 from deep_translator import GoogleTranslator
 
@@ -210,7 +210,38 @@ def get_road_distance(lat1, lon1, lat2, lon2):
         pass
     return None
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# ── HTML előkészítés ─────────────────────────────────────────────────────────
+# Az összes kártyakép base64-be van ágyazva a HTML-be egyszer, induláskor.
+# @st.cache_data miatt csak app-újraindításkor fut újra – ez szándékos.
+
+@st.cache_data(show_spinner=False)
+def _prepare_html() -> str:
+    with open("drag_drop.html", "r") as f:
+        h = f.read()
+    card_images = [
+        "sima_tarolo_bal", "sima_tarolo_jobb",
+        "sima_fent_bal", "sima_fent_jobb",
+        "sima_kozep_bal", "sima_kozep_jobb",
+        "sima_lent_bal", "sima_lent_jobb",
+        "sima_lent_egyedul_bal", "sima_lent_egyedul_jobb",
+        "ora_egyedul", "ora_bal", "ora_jobb", "ora_mindketto",
+        "kg", "washing", "car", "light", "household",
+        "empty_template",
+        "monitor1", "monitor2", "monitor3", "monitor4",
+    ]
+    for name in card_images:
+        h = h.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
+    d = {}
+    for name in ["web", "bank", "hotel"]:
+        p = f"cards/template_{name}.png"
+        if _os.path.exists(p):
+            d[name] = img_to_base64(p)
+    for name in ["web", "bank", "hotel"]:
+        placeholder = "{{TPL_" + name.upper() + "}}"
+        h = h.replace(placeholder, d.get(name, ""))
+    return h
+
+# ── Streamlit UI ─────────────────────────────────────────────────────────────
 
 st.title("Carbon Crane Infographic Builder")
 
@@ -246,23 +277,7 @@ st.success(f"{len(df)} rows loaded – {n_websites} websites")
 
 st.divider()
 
-with open("drag_drop.html", "r") as f:
-    html = f.read()
-
-# ── PNG kártyák + monitor képek base64 injektálása ──────────────────────────────
-card_images = [
-    "sima_tarolo_bal", "sima_tarolo_jobb",
-    "sima_fent_bal", "sima_fent_jobb",
-    "sima_kozep_bal", "sima_kozep_jobb",
-    "sima_lent_bal", "sima_lent_jobb",
-    "sima_lent_egyedul_bal", "sima_lent_egyedul_jobb",
-    "ora_egyedul", "ora_bal", "ora_jobb", "ora_mindketto",
-    "kg", "washing", "car", "light", "household",
-    "empty_template",
-    "monitor1", "monitor2", "monitor3", "monitor4",
-]
-for name in card_images:
-    html = html.replace(f"cards/{name}.png", img_to_base64(f"cards/{name}.png"))
+html = _prepare_html()
 
 # ── Nyelvválasztó ─────────────────────────────────────────────────────────────
 
@@ -379,4 +394,5 @@ if st.session_state["geocoded_cities"] is not None:
     st.caption(f"({addr1}  →  {addr2})")
 
 st.divider()
-components.html(html, height=1200, scrolling=False)
+
+st.iframe(html, height=1200)
