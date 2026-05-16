@@ -378,7 +378,6 @@ body {
   border-radius: 6px;
 }
 .export-hide { visibility: hidden; }
-.export-selected-off { transform: none !important; filter: none !important; }
 
 .card {
   background: transparent;
@@ -636,20 +635,6 @@ body {
   color: #7a5a10;
 }
 .ai-stale-warning.visible { display: flex; }
-.ai-regen-btn {
-  background: #e8a020;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 5px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: 'Barlow', 'Segoe UI', sans-serif;
-  transition: opacity 0.15s;
-}
-.ai-regen-btn:hover { opacity: 0.85; }
 .ai-spinner {
   display: none;
   align-items: center;
@@ -689,67 +674,93 @@ body {
 }
 .ai-error.visible { display: block; }
 
-#pdf-stale-modal {
+/* ── PDF export modal (summary choice) ─────────────────────────────────── */
+#pdf-export-modal {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(45,58,45,0.45);
-  z-index: 9998;
-  align-items: center;
+  background: rgba(30,40,30,0.50);
+  z-index: 9997;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 120px;
+  backdrop-filter: blur(2px);
 }
-#pdf-stale-modal.visible { display: flex; }
-.pdf-modal-box {
+#pdf-export-modal.visible { display: flex; }
+.pdf-export-modal-box {
   background: #f5f2ec;
   border: 1.5px solid #c8bfa8;
-  border-radius: 14px;
-  padding: 28px 32px;
-  max-width: 420px;
+  border-radius: 16px;
+  padding: 32px 36px 28px 36px;
+  max-width: 400px;
   width: 90%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  gap: 10px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10);
 }
-.pdf-modal-title {
-  font-size: 15px;
+.pdf-export-modal-icon {
+  width: 44px;
+  height: 44px;
+  background: #2d6a4f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.pdf-export-modal-icon svg { display: block; }
+.pdf-export-modal-title {
+  font-size: 16px;
   font-weight: 700;
-  color: #2d3a2d;
+  color: #1a2a1a;
+  letter-spacing: 0.01em;
 }
-.pdf-modal-desc {
+.pdf-export-modal-desc {
   font-size: 13px;
   color: #5a6a5a;
-  line-height: 1.5;
+  line-height: 1.55;
+  margin-bottom: 6px;
 }
-.pdf-modal-actions {
+.pdf-export-modal-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
-.pdf-modal-btn {
-  padding: 9px 18px;
-  border-radius: 8px;
+.pdf-export-modal-btn {
+  padding: 10px 20px;
+  border-radius: 9px;
   border: none;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Barlow', 'Segoe UI', sans-serif;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.1s;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.pdf-modal-btn:hover { opacity: 0.85; }
-.pdf-modal-btn.primary   { background: #2d6a4f; color: #fff; }
-.pdf-modal-btn.secondary { background: #eae6de; color: #2d3a2d; border: 1px solid #c8bfa8; }
-.pdf-modal-btn.danger    { background: #f5f2ec; color: #7a5a3a; border: 1px solid #c8bfa8; }
-.pdf-modal-cancel {
+.pdf-export-modal-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+.pdf-export-modal-btn:active { transform: translateY(0); }
+.pdf-export-modal-btn.with-summary  { background: #2d6a4f; color: #fff; }
+.pdf-export-modal-btn.no-summary    { background: #eae6de; color: #3a4a3a; border: 1px solid #c8bfa8; }
+.pdf-export-modal-btn .btn-icon     { flex-shrink: 0; opacity: 0.85; }
+.pdf-export-modal-btn .btn-label    { display: flex; flex-direction: column; gap: 1px; }
+.pdf-export-modal-btn .btn-title    { font-size: 13px; font-weight: 700; line-height: 1.2; }
+.pdf-export-modal-btn .btn-sub      { font-size: 11px; font-weight: 500; opacity: 0.75; }
+.pdf-export-modal-cancel {
   font-size: 12px;
   color: #8a9a8a;
   text-align: center;
   cursor: pointer;
-  padding: 2px;
+  padding: 4px;
+  margin-top: 2px;
+  transition: color 0.15s;
 }
-.pdf-modal-cancel:hover { color: #2d3a2d; }
+.pdf-export-modal-cancel:hover { color: #2d3a2d; }
+
 
 #export-overlay {
   display: none;
@@ -894,69 +905,30 @@ body {
     <div class="ai-result" id="ai-result">
       <div class="ai-result-meta" id="ai-result-meta"></div>
       <div class="ai-result-text" id="ai-result-text"></div>
-      <div class="ai-result-info">The summary will automatically be included in the PDF export. · AI-generated content may contain errors. Always verify key figures against the infographic.</div>
+      <div class="ai-result-info">AI-generated content may contain errors. Always verify key figures against the infographic.</div>
     </div>
   </div>
 </div>
 
-<div id="summary-page" style="
-  position: fixed;
-  left: -9999px;
-  top: 0;
-  width: 794px;
-  background: white;
-  font-family: 'Barlow', 'Segoe UI', Arial, sans-serif;
-  color: #1a1a1a;
-  box-sizing: border-box;
-  overflow: hidden;
-">
-  <div>
-    <div id="sum-header" style="
-      background: #2d6a4f;
-      color: white;
-      padding: 18px 40px;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    ">Carbon Crane – Summary Report</div>
-    <div style="padding: 28px 40px 40px 40px;">
-      <div id="sum-meta" style="
-        color: #666;
-        font-size: 13px;
-        margin-bottom: 14px;
-        letter-spacing: 0.01em;
-      "></div>
-      <div style="border-top: 1.5px solid #2d6a4f; margin-bottom: 22px;"></div>
-      <div id="sum-body" style="
-        font-size: 15px;
-        line-height: 1.75;
-        color: #222;
-      "></div>
-      <div style="margin-top: 40px; font-size: 9px; color: #bbb; text-align: center;">
-        Generated by Carbon Crane &middot; Powered by Groq Llama 3.3 70B
-      </div>
+
+<!-- PDF export modal -->
+<div id="pdf-export-modal">
+  <div class="pdf-export-modal-box">
+    <div class="pdf-export-modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="13" x2="15" y2="13"/>
+        <line x1="9" y1="17" x2="13" y2="17"/>
+      </svg>
     </div>
+    <div class="pdf-export-modal-title" id="pdf-export-modal-title">Export PDF</div>
+    <div class="pdf-export-modal-desc" id="pdf-export-modal-desc"></div>
+    <div class="pdf-export-modal-actions" id="pdf-export-modal-actions"></div>
+    <div class="pdf-export-modal-cancel" onclick="closePDFExportModal()">Cancel</div>
   </div>
 </div>
 
-<div id="pdf-stale-modal">
-  <div class="pdf-modal-box">
-    <div class="pdf-modal-title">⚠ The summary may be outdated</div>
-    <div class="pdf-modal-desc">The infographic has changed since the summary was generated. How would you like to proceed?</div>
-    <div class="pdf-modal-actions">
-      <button class="pdf-modal-btn primary" onclick="handlePDFModalChoice('regenerate')">
-        Regenerate summary &amp; export
-      </button>
-      <button class="pdf-modal-btn secondary" onclick="handlePDFModalChoice('keep')">
-        Export with current summary
-      </button>
-      <button class="pdf-modal-btn danger" onclick="handlePDFModalChoice('nosummary')">
-        Export without summary
-      </button>
-    </div>
-    <div class="pdf-modal-cancel" onclick="closePDFModal()">Cancel</div>
-  </div>
-</div>
 
 <div id="export-overlay">
   <div class="spinner"></div>
@@ -1841,34 +1813,74 @@ async function exportPNG() {
   }
 }
 
-function closePDFModal() {
-  document.getElementById('pdf-stale-modal').classList.remove('visible');
-}
+// ── PDF export flow ───────────────────────────────────────────────────────────
+// Egyetlen modal, dinamikusan épített gombokkal a helyzet alapján:
+//   nincs summary        → "Generate & include" + "Without summary"
+//   van friss summary    → "Include summary"    + "Without summary"
+//   van elavult summary  → "Regenerate & include" + "Include anyway" + "Without summary"
 
-async function handlePDFModalChoice(choice) {
-  closePDFModal();
-  if (choice === 'regenerate') {
-    await generateAISummary();
-  } else if (choice === 'nosummary') {
-    const saved = aiSummaryText;
-    aiSummaryText = '';
-    await doExportPDF();
-    aiSummaryText = saved;
-    return;
-  }
-  await doExportPDF();
-}
+function exportPDF() {
+  const desc    = document.getElementById('pdf-export-modal-desc');
+  const actions = document.getElementById('pdf-export-modal-actions');
+  actions.innerHTML = '';
 
-async function exportPDF() {
   const isStale = aiSummaryText && summarySnapshot !== getSummarySnapshot();
-  if (isStale) {
-    document.getElementById('pdf-stale-modal').classList.add('visible');
-    return;
+
+  function makeBtn(cls, iconPath, title, sub, onClick) {
+    const btn = document.createElement('button');
+    btn.className = `pdf-export-modal-btn ${cls}`;
+    btn.onclick = onClick;
+    btn.innerHTML = `
+      <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${iconPath}</svg>
+      <span class="btn-label">
+        <span class="btn-title">${title}</span>
+        <span class="btn-sub">${sub}</span>
+      </span>`;
+    actions.appendChild(btn);
   }
-  await doExportPDF();
+
+  const iconWithText = `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>`;
+  const iconPlain    = `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>`;
+
+  if (!aiSummaryText) {
+    desc.textContent = 'Would you like to include a written summary alongside the infographic?';
+    makeBtn('with-summary', iconWithText, 'Generate & include summary', 'Generate now, then add to PDF', async () => {
+      closePDFExportModal();
+      await generateAISummary();
+      if (aiSummaryText) await doExportPDF(true);
+    });
+  } else if (isStale) {
+    desc.textContent = 'The summary is outdated — the infographic has changed since it was generated.';
+    makeBtn('with-summary', iconWithText, 'Regenerate & include', 'Generate a fresh summary, then export', async () => {
+      closePDFExportModal();
+      await generateAISummary();
+      if (aiSummaryText) await doExportPDF(true);
+    });
+    makeBtn('no-summary', iconWithText, 'Include anyway', 'Use the existing outdated summary', async () => {
+      closePDFExportModal();
+      await doExportPDF(true);
+    });
+  } else {
+    desc.textContent = 'A summary is ready. Would you like to include it alongside the infographic?';
+    makeBtn('with-summary', iconWithText, 'Include summary', 'Infographic + written summary page', async () => {
+      closePDFExportModal();
+      await doExportPDF(true);
+    });
+  }
+
+  makeBtn('no-summary', iconPlain, 'Export without summary', 'Infographic only', async () => {
+    closePDFExportModal();
+    await doExportPDF(false);
+  });
+
+  document.getElementById('pdf-export-modal').classList.add('visible');
 }
 
-async function doExportPDF() {
+function closePDFExportModal() {
+  document.getElementById('pdf-export-modal').classList.remove('visible');
+}
+
+async function doExportPDF(includeSummary) {
   try {
     const CAPTURE_SCALE = 4;
     const DISPLAY_SCALE = 2;
@@ -1888,7 +1900,7 @@ async function doExportPDF() {
 
     pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH, '', 'FAST');
 
-    if (aiSummaryText && aiSummaryText.trim()) {
+    if (includeSummary && aiSummaryText && aiSummaryText.trim()) {
       const A4_W_PX = 794;
       const A4_H_PX = 1123;
       const SCALE   = 2;
@@ -1953,21 +1965,50 @@ async function doExportPDF() {
       const maxW    = CW - marginX * 2;
       let   curY    = HDR_H + 80 * SCALE;
 
+      const isCJK = /[\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(aiSummaryText);
+      const bodyFont = isCJK
+        ? `${17 * SCALE}px 'Noto Sans CJK', 'Noto Sans JP', 'Noto Sans SC', 'MS Gothic', 'Hiragino Sans', sans-serif`
+        : `${17 * SCALE}px Barlow, sans-serif`;
+      ctx.font = bodyFont;
+
+      function wrapText(text) {
+        const result = [];
+        if (isCJK) {
+          let line = '';
+          for (const ch of text) {
+            const test = line + ch;
+            if (ctx.measureText(test).width > maxW && line) {
+              result.push(line);
+              line = ch;
+            } else {
+              line = test;
+            }
+          }
+          if (line) result.push(line);
+        } else {
+          const words = text.replace(/\n/g, ' ').split(' ').filter(Boolean);
+          let line = '';
+          for (const word of words) {
+            const test = line ? line + ' ' + word : word;
+            if (ctx.measureText(test).width > maxW && line) {
+              result.push(line);
+              line = word;
+            } else {
+              line = test;
+            }
+          }
+          if (line) result.push(line);
+        }
+        return result;
+      }
+
       const paragraphs = aiSummaryText.split(/\n\n+/).filter(p => p.trim());
       for (const para of paragraphs) {
-        const words = para.trim().replace(/\n/g, ' ').split(' ').filter(Boolean);
-        let line = '';
-        for (const word of words) {
-          const test = line ? line + ' ' + word : word;
-          if (ctx.measureText(test).width > maxW && line) {
-            ctx.fillText(line, marginX, curY);
-            curY += lineH;
-            line  = word;
-          } else {
-            line = test;
-          }
+        const lines = wrapText(para.trim());
+        for (const line of lines) {
+          ctx.fillText(line, marginX, curY);
+          curY += lineH;
         }
-        if (line) { ctx.fillText(line, marginX, curY); curY += lineH; }
         curY += lineH * 0.5;
       }
 
